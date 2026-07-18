@@ -1,0 +1,166 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║   🕯️  CANDLE STUDIO - SIMPLIFIED SETUP                                ║
+║                                                                          ║
+║   Copy từ WSL sang Windows + Tạo Desktop Shortcut + Chạy                ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+✅ CÁC BƯỚC SETUP (Chỉ 3 lần đầu tiên)
+════════════════════════════════════════════════════════════════════════════
+
+
+BƯỚC 1️⃣ : COPY TỪ WSL SANG WINDOWS (10 phút)
+────────────────────────────────────────────────────────────────────────────
+
+🎯 CÁCH NHANH NHẤT (Khuyến nghị):
+
+1. Mở File Explorer
+2. Thanh địa chỉ nhập: \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy
+3. Tìm file: COPY_FROM_WSL.bat
+4. Double-click file COPY_FROM_WSL.bat
+5. Chọn: yes khi hỏi Overwrite
+6. Chờ copy xong (5-10 phút)
+
+
+❌ Nếu COPY_FROM_WSL.bat không tìm được source:
+
+  → File explorer navigate: \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy
+  → Right-click folder scentcandlewithVy
+  → Copy
+  → Navigate: C:\Users\PC\Documents\GitHub
+  → Paste
+
+
+════════════════════════════════════════════════════════════════════════════
+
+BƯỚC 2️⃣ : CÀI NPM DEPENDENCIES (10 phút)
+────────────────────────────────────────────────────────────────────────────
+
+1. Mở File Explorer
+2. Navigate: C:\Users\PC\Documents\GitHub\scentcandlewithVy
+3. Double-click file: SETUP.bat
+4. ⏳ Chờ nó cài packages (terminal sẽ chạy tự động)
+   
+   Nó sẽ show:
+   ✅ Node.js found: v18.17.0
+   📦 Installing Frontend dependencies...
+   ✅ Frontend dependencies installed!
+   📦 Installing Backend dependencies...
+   ✅ Backend dependencies installed!
+   ✅ Setup Complete!
+
+5. Đóng cửa sổ terminal khi xong
+
+
+════════════════════════════════════════════════════════════════════════════
+
+BƯỚC 3️⃣ : TẠO DESKTOP SHORTCUT (2 phút)
+────────────────────────────────────────────────────────────────────────────
+
+🎯 CÁCH NHANH NHẤT:
+
+1. Right-click Desktop → Chọn: New → Shortcut
+2. Nhập đường dẫn:
+   C:\Users\PC\Documents\GitHub\scentcandlewithVy\START_CANDLE_STUDIO.bat
+3. Click Next
+4. Đặt tên: 🕯️ Candle Studio
+5. Click Finish
+6. 🎉 Done! Icon shortcut xuất hiện trên Desktop
+
+
+════════════════════════════════════════════════════════════════════════════
+
+⚡ LẦN SAU CHỈ CẦN: DOUBLE-CLICK ICON TRÊN DESKTOP
+════════════════════════════════════════════════════════════════════════════
+
+1. 🕯️ Candle Studio (icon trên Desktop)
+2. Double-click
+3. ⏳ Chờ 10 giây
+4. Mở browser: http://localhost:5173
+5. 🎨 App chạy!
+
+Đóng 2 cửa sổ Terminal khi muốn tắt app
+
+
+════════════════════════════════════════════════════════════════════════════
+
+📋 FILE CHECKLIST
+════════════════════════════════════════════════════════════════════════════
+
+Trong folder C:\Users\PC\Documents\GitHub\scentcandlewithVy, bạn sẽ thấy:
+
+✅ COPY_FROM_WSL.bat           ← Chạy cái này trước (copy từ WSL)
+✅ SETUP.bat                   ← Rồi chạy cái này (cài npm)
+✅ START_CANDLE_STUDIO.bat     ← Rồi shortcut cái này vào Desktop
+✅ frontend/                   ← React code (không cần touch)
+✅ backend/                    ← Node.js API (không cần touch)
+✅ docs/                       ← Documentation
+
+
+════════════════════════════════════════════════════════════════════════════
+
+🆘 TROUBLESHOOT
+════════════════════════════════════════════════════════════════════════════
+
+❌ "COPY_FROM_WSL.bat: Windows cannot find path"
+   → WSL không hoạt động hoặc path sai
+   → Dùng cách copy manual (File Explorer)
+
+❌ "Node.js not found" (khi chạy SETUP.bat)
+   → Cài Node.js: https://nodejs.org/ (LTS)
+   → Restart Windows
+   → Chạy lại SETUP.bat
+
+❌ "Port 3000/5173 already in use"
+   → Mở PowerShell (Admin):
+     netstat -ano | findstr :3000
+     taskkill /PID <PID> /F
+
+❌ "npm install failed"
+   → Xoá folder:
+     cd C:\Users\PC\Documents\GitHub\scentcandlewithVy\frontend
+     rmdir /s node_modules
+     npm install
+
+
+════════════════════════════════════════════════════════════════════════════
+
+📝 QUY TRÌNH SETUP LẦN 1
+════════════════════════════════════════════════════════════════════════════
+
+1. Double-click COPY_FROM_WSL.bat (Copy project)
+   ↓
+2. Double-click SETUP.bat (Cài npm)
+   ↓
+3. Tạo shortcut (Desktop)
+   ↓
+4. Double-click 🕯️ Candle Studio (Chạy app)
+   ↓
+   ✅ Done!
+
+
+════════════════════════════════════════════════════════════════════════════
+
+⚡ QUY TRÌNH MỖI LẦN SAU
+════════════════════════════════════════════════════════════════════════════
+
+1. Double-click 🕯️ Candle Studio (Desktop)
+   ↓
+2. Chờ 10 giây, mở: http://localhost:5173
+   ↓
+   ✅ App chạy!
+
+
+════════════════════════════════════════════════════════════════════════════
+
+💡 TIP: Nếu quên folder path
+
+Desktop shortcut sẽ tự động lưu folder location, nên lần sau không cần nhớ 😊
+
+════════════════════════════════════════════════════════════════════════════
+
+🌸 Made with 💗 for Scent Candle Studio
+
+Bắt đầu: COPY_FROM_WSL.bat → SETUP.bat → Desktop Shortcut

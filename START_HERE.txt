@@ -1,0 +1,121 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║   🕯️  CANDLE STUDIO - Distribution System                             ║
+║                                                                          ║
+║   Full-Stack App: Thiết kế nến + Quản lý bán hàng                      ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+📝 HƯỚNG DẪN NHANH (3 BƯỚC)
+════════════════════════════════════════════════════════════════════════════
+
+BƯỚC 1: Copy sang Windows
+─────────────────────────
+File explorer → thanh địa chỉ nhập:
+  \\wsl$\Ubuntu\mnt\user-data\outputs
+
+Tìm folder "scentcandlewithVy" → Copy → Paste vào:
+  C:\Users\PC\Documents\GitHub\
+
+
+BƯỚC 2: Setup (lần 1 thôi)
+──────────────────────────
+1. Mở file explorer → vào: C:\Users\PC\Documents\GitHub\scentcandlewithVy
+2. Double-click file: SETUP.bat
+3. Chờ nó install npm packages (5-10 phút)
+4. Đóng cửa sổ khi xong
+
+
+BƯỚC 3: Tạo Desktop Shortcut
+────────────────────────────
+Xem file: COPY_AND_SHORTCUT.md
+
+Hoặc nhanh nhất:
+  → Right-click Desktop → New → Shortcut
+  → Paste: C:\Users\PC\Documents\GitHub\scentcandlewithVy\START_CANDLE_STUDIO.bat
+  → Next → Đặt tên: 🕯️ Candle Studio
+  → Finish
+
+
+🎉 XONG! Mỗi lần chạy
+═════════════════════════════════════════════════════════════════════════════
+
+Double-click icon "🕯️ Candle Studio" trên Desktop
+  → 2 cửa sổ Terminal sẽ mở (Frontend + Backend)
+  → Chờ 10 giây
+  → Mở browser: http://localhost:5173
+  → Xong! App đã chạy 🎨
+
+
+📚 TÀI LIỆU
+═════════════════════════════════════════════════════════════════════════════
+
+README.md                   → Tổng quan dự án
+QUICK_START.md              → 5 phút chạy
+COPY_AND_SHORTCUT.md        → Copy + tạo shortcut (hướng dẫn chi tiết)
+PROJECT_SUMMARY.md          → Tóm tắt features
+
+docs/
+  ├── SETUP.md              → Cài đặt chi tiết
+  ├── API.md                → API endpoints
+  └── ARCHITECTURE.md       → Kiến trúc hệ thống
+
+
+🎯 FEATURES
+═════════════════════════════════════════════════════════════════════════════
+
+✅ Candle Studio (Thiết kế nến)
+   - Wizard 4 bước: sáp → kích thước → tên → lưu
+   - Cute pastel UI
+
+✅ Distribution (Quản lý bán)
+   - Kanban board 5 trạng thái
+   - Tạo đơn hàng
+   - Auto-deduct kho (theo BOM)
+   - Profit tracking
+
+✅ Dashboard (Thống kê)
+   - Doanh thu, đơn hàng, kho
+   - Biểu đồ 7 ngày
+   - Top products bán chạy
+
+
+💻 YÊU CẦU PHẦN CỨNG
+═════════════════════════════════════════════════════════════════════════════
+
+✅ Windows 10/11
+✅ Node.js 16+ (tải từ https://nodejs.org/)
+✅ 2 GB RAM (tối thiểu)
+✅ 500 MB disk space
+
+
+🆘 TROUBLESHOOT
+═════════════════════════════════════════════════════════════════════════════
+
+❌ "Node.js not found"
+  → Cài Node.js từ https://nodejs.org/ (LTS)
+  → Restart Windows
+  → Chạy lại SETUP.bat
+
+❌ "Port 3000/5173 already in use"
+  → Mở PowerShell, chạy:
+     netstat -ano | findstr :3000
+     taskkill /PID <PID> /F
+
+❌ "SETUP.bat không work"
+  → Mở PowerShell (Admin)
+  → cd C:\Users\PC\Documents\GitHub\scentcandlewithVy
+  → npm install (chạy tay)
+
+
+📞 HELP
+═════════════════════════════════════════════════════════════════════════════
+
+Xem file COPY_AND_SHORTCUT.md để chi tiết từng bước
+Xem docs/SETUP.md để troubleshoot
+
+
+═════════════════════════════════════════════════════════════════════════════
+🌸 Made with 💗 for Scent Candle Studio
+═════════════════════════════════════════════════════════════════════════════

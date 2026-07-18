@@ -1,0 +1,29 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║   🕯️  CANDLE STUDIO - COMPLETE SETUP                                   ║
+║                                                                          ║
+║   TỬA THỨ NHẤT CHỈ CẦN:                                                 ║
+║   ══════════════════════════════════════════════════════════════════════ ║
+║                                                                          ║
+║   📍 Vị trí file: \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy║
+║                                                                          ║
+║   1️⃣  Double-click: INSTALL_ALL.bat                                     ║
+║                                                                          ║
+║   2️⃣  Chờ xong (15-20 phút lần đầu)                                     ║
+║                                                                          ║
+║   3️⃣  Icon "🕯️ Candle Studio" sẽ xuất hiện trên Desktop              ║
+║                                                                          ║
+║   4️⃣  Mỗi lần sau: Double-click icon đó → App chạy 🎨                 ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+TẶNG LE ANH:
+
+File Explorer → Thanh địa chỉ nhập:
+  \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy
+
+Double-click: INSTALL_ALL.bat
+
+Ready? 🚀
+

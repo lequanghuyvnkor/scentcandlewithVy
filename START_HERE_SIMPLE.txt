@@ -1,0 +1,72 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║   🕯️  CANDLE STUDIO - 3 BƯỚC SETUP (CHỈ LẦN ĐẦU)                      ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+
+📍 VỊ TRỊ FILE HIỆN TẠI
+════════════════════════════════════════════════════════════════════════════
+
+Các file setup nằm trong:
+  \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy
+
+
+════════════════════════════════════════════════════════════════════════════
+
+✅ BƯỚC 1: COPY PROJECT TỪ WSL SANG WINDOWS
+════════════════════════════════════════════════════════════════════════════
+
+File Explorer → Thanh địa chỉ nhập:
+  \\wsl$\Ubuntu\mnt\user-data\outputs\scentcandlewithVy
+
+Tìm file: COPY_FROM_WSL.bat
+Double-click nó → Chọn "yes" → Chờ copy xong (5-10 phút)
+
+❌ Nếu không work:
+  → File Explorer manual copy folder vào:
+     C:\Users\PC\Documents\GitHub\
+
+
+════════════════════════════════════════════════════════════════════════════
+
+✅ BƯỚC 2: CÀI NPM DEPENDENCIES
+════════════════════════════════════════════════════════════════════════════
+
+File Explorer → Navigate:
+  C:\Users\PC\Documents\GitHub\scentcandlewithVy
+
+Double-click: SETUP.bat
+Chờ terminal chạy xong (10 phút)
+Đóng window
+
+
+════════════════════════════════════════════════════════════════════════════
+
+✅ BƯỚC 3: TẠO DESKTOP SHORTCUT
+════════════════════════════════════════════════════════════════════════════
+
+Right-click Desktop → New → Shortcut
+Paste: C:\Users\PC\Documents\GitHub\scentcandlewithVy\START_CANDLE_STUDIO.bat
+Next → Tên: 🕯️ Candle Studio
+Finish
+
+🎉 Icon shortcut xuất hiện trên Desktop!
+
+
+════════════════════════════════════════════════════════════════════════════
+
+🚀 LẦN SAU: CHỈ CẦN DOUBLE-CLICK ICON TRên DESKTOP
+════════════════════════════════════════════════════════════════════════════
+
+1. Double-click: 🕯️ Candle Studio
+2. Chờ 10 giây
+3. Mở: http://localhost:5173
+4. ✅ App chạy!
+
+
+════════════════════════════════════════════════════════════════════════════
+
+📚 CHI TIẾT ĐẦY ĐỦ XEM: SETUP_INSTRUCTIONS.txt
+
+════════════════════════════════════════════════════════════════════════════
