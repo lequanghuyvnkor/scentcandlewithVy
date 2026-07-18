@@ -7,6 +7,14 @@ echo   CANDLE STUDIO - Starting Application
 echo ===================================================
 echo.
 
+REM Auto-pull latest updates from GitHub if Git is available
+git --version >nul 2>&1
+if not errorlevel 1 (
+    echo [INFO] Checking and downloading latest updates from GitHub...
+    git pull origin main
+    echo.
+)
+
 if not exist "frontend\node_modules" (
     echo [INFO] Installing Frontend dependencies...
     cd /d "%~dp0frontend" && npm install
