@@ -2,11 +2,18 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 23:40
-**Session ID:** feat-008
-**Active Feature:** feat-009 + feat-008 — DONE, feat-010 tiếp theo (user yêu cầu "tiếp tục, hoàn thiện cho tôi")
+**Last Updated:** 2026-07-20 00:20
+**Session ID:** feat-010
+**Active Feature:** feat-010 — DONE. **TOÀN BỘ 10/10 FEATURE TRONG feature-list.json ĐÃ HOÀN THÀNH.**
 
-**9/10 feature đã xong**: feat-001,002,003,004,007,006,005,009,008. Còn **feat-010** (báo cáo quản trị) đang làm.
+- **feat-010 (Báo cáo quản trị cốt lõi)**: tab "📊 Báo cáo" mới, 4 báo cáo tính trực tiếp từ state hiện có (không cần model dữ liệu mới — nhờ đúng vào việc feat-001/006 đã bắt buộc mọi biến động đi qua transaction):
+  1. Nhập-xuất-tồn theo kỳ (chọn ngày) — tồn đầu kỳ suy ngược từ tồn cuối kỳ hiện tại.
+  2. Hàng sắp hết hạn — gộp lô NVL (feat-001) + lô thành phẩm "available" (feat-008), tái dùng `batchStatus()`.
+  3. Chênh lệch BOM — định mức vs tiêu hao thực tế trung bình/đơn vị, dựa trên `production_consume` transactions của các lệnh sản xuất đã hoàn thành (chỉ tính SKU chuẩn, không tính đơn custom vì đơn custom có BOM riêng theo item, không dùng bảng BOM chung).
+  4. Tỷ lệ hết hàng theo SKU — CHỦ ĐỘNG ghi rõ đây là snapshot tại thời điểm xem, không phải tỷ lệ % thời gian hết hàng thực sự (app chưa lưu lịch sử tồn kho theo ngày) — nói thẳng giới hạn ngay trên UI thay vì ngụy biện.
+  - Verify sống: sản xuất 10 Lotus Dream → báo cáo 1 khớp chính xác từng NVL bị trừ (vd. sáp đậu nành 12000→8960 = trừ đúng 10×304g theo BOM); báo cáo 3 cho ra đúng 0.0% chênh lệch (vì tiêu hao thực tế = định mức, không có sai lệch giả); báo cáo 4 tỷ lệ hết hàng giảm từ 100%(9/9) xuống 89%(8/9) đúng lúc Lotus Dream có hàng; báo cáo 2 vẫn hiện đúng 3 lô sắp/đã hết hạn từ seed feat-001, sắp xếp đúng thứ tự.
+
+**9/10 → 10/10 feature đã xong**: feat-001,002,003,004,007,006,005,009,008,010.
 
 - **feat-009 (Giá thanh lý 3 cấp)**: `SALVAGE_DEFAULTS` (recipes.js) + `db.salvageConfig` chỉnh được qua `SalvageConfigModal`. `resolveGrossSalvage`/`computeNetSalvage` (formatters.js) thay thế công thức `salvage ?? cost*0.5` cũ. `PriceModal` giờ có input override salvage/phí bán/đóng gói lại/huỷ hàng (để trống = kế thừa cấp 2/3) + dòng breakdown NetSalvageValue. Verify: khớp chính xác ví dụ trong kế hoạch gốc (70.000 - 5.000 - 5.000 = 60.000).
 - **feat-008 (Trạng thái tồn thành phẩm chi tiết)**: `frontend/src/utils/productBatches.js` mới (song song batches.js nhưng cho thành phẩm, có trạng thái available/qc_hold/defective/sample). `inventoryPos.available` cho products giờ = tổng lô "available" (không phải tổng thô). `checkStockForItems` nhận thêm `productBatches` để chỉ kiểm tra lượng sẵn sàng bán. Mọi điểm thay đổi qty thành phẩm (lệnh sản xuất hoàn thành, xuất/hoàn đơn custom, khách trả hàng) đều đi qua lô thay vì cộng/trừ thẳng — khách trả hàng giờ vào lô "chờ QC", KHÔNG tự động cộng vào tồn sẵn bán. Products tab có panel "📦 N" xem breakdown theo trạng thái + đổi trạng thái từng lô qua dropdown. Verify: sản xuất 10 cây → sẵn sàng bán 10; chuyển sang "mẫu" → sẵn sàng bán về 0; khách trả 1 → tạo lô riêng "chờ QC" 1, sẵn sàng bán vẫn giữ nguyên 10 (không cộng nhầm).
@@ -46,19 +53,22 @@
 
 ### What's In Progress
 
-- (không có — toàn bộ 3 feature còn lại từ yêu cầu "làm feat 5 6 7" đã xong: feat-007 → feat-006 → feat-005, đúng thứ tự đã chọn.)
+- (không có — TOÀN BỘ 10/10 feature trong `feature-list.json` đã hoàn thành và verify. Không còn feature nào "not-started".)
 
 ### What's Next
 
-- Hỏi user muốn làm gì tiếp theo. Còn lại trong feature-list.json: feat-008 (trạng thái tồn thành phẩm chi tiết), feat-009 (giá thanh lý 3 cấp), feat-010 (báo cáo quản trị) — cả 3 đều đã đủ điều kiện dependency, chưa có yêu cầu nào về thứ tự.
+- Chưa có yêu cầu tiếp theo từ user. Nếu muốn mở rộng thêm, các hướng hợp lý dựa trên bản kế hoạch gốc (đã nằm ngoài 10 feature ban đầu, thuộc "Giai đoạn 4 — Tối ưu nâng cao"): dự báo nhu cầu bằng mô hình thời gian, phát hiện nhu cầu bất thường, tối ưu ngân sách/nhiều NCC, mô phỏng kịch bản kinh doanh. Hoặc hoàn thiện các giới hạn đã ghi nhận bên dưới (chuyển vị trí kho, hàng dùng thử/tặng, kho bán thành phẩm).
 
 ## Blockers / Risks
 
 - [x] ~~feat-005 cần hỏi user về kiến trúc backend~~ — ĐÃ GIẢI QUYẾT: user xác nhận doanh nghiệp 1 người, feat-005 chỉ cần gắn nhãn vai trò (client-side, không cần backend/auth thật, không chặn quyền). feat-006 đã dựng sẵn `db.currentRole` + `actorRole` trên transactions — feat-005 chỉ cần XÀI dữ liệu này cho báo cáo, không cần dựng lại cơ chế gắn nhãn.
-- [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng — phù hợp với thực tế nghiệp vụ, không còn là vấn đề cần giải quyết.
+- [ ] Toàn bộ app vẫn client-only (`window.storage` không hoạt động thật trong môi trường test — mỗi lần reload trang mất hết state), một người dùng — phù hợp với thực tế nghiệp vụ, không còn là vấn đề cần giải quyết cho MVP này nhưng cần lưu ý nếu triển khai thật (dữ liệu sẽ mất khi đóng trình duyệt trừ khi `window.storage` được cắm vào một backend/localStorage thật).
 - [ ] Giới hạn đã biết trong feat-001: hoàn kho đơn custom tạo lô "hoàn trả" mới thay vì truy ngược đúng lô gốc.
-- [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê thật (chỉ 1 người dùng nên không có ý nghĩa) — feat-005 rescoped có thể thêm bước "xác nhận nhẹ" mang tính nhắc nhở, không phải access-control.
+- [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê thật (chỉ 1 người dùng nên không có ý nghĩa).
 - [ ] feat-006 chưa làm "chuyển vị trí kho" và "hàng dùng thử/tặng khách" — thiếu hạ tầng tương ứng (đa vị trí lưu kho, luồng tặng/mẫu riêng), nằm ngoài phạm vi hợp lý của 1 feature.
+- [ ] feat-008 chưa làm "kho bán thành phẩm"/đang chờ đóng gói — bản kế hoạch gốc (mục 2.3) tự xếp việc này vào giai đoạn sau, không phải thiếu sót.
+- [ ] feat-010's báo cáo "Tỷ lệ hết hàng" là snapshot tại thời điểm xem, KHÔNG phải % thời gian hết hàng thực sự — app chưa lưu lịch sử tồn kho theo ngày để tính chỉ số đó chính xác. Đã ghi rõ giới hạn này ngay trên UI.
+- [ ] Toàn bộ 10 feature đều KHÔNG có test tự động — mọi verify trong phiên này đều là thao tác tay qua browser (script JS mô phỏng click), không có test suite chạy lại được. Nếu cần regression safety net, nên cân nhắc thêm test tự động (Vitest/RTL) trong tương lai — nằm ngoài phạm vi các feature đã yêu cầu.
 - [ ] Môi trường browser-test của session này: `computer` tool's `left_click` không đáng tin cậy. Cách xử lý ổn định: tìm nút qua `document.querySelectorAll('button')`, gọi trực tiếp `element[reactPropsKey].onClick(...)` qua `javascript_tool`, và LUÔN tách hành động và bước kiểm tra thành 2 lời gọi `javascript_exec` riêng. Khi trang có NHIỀU input cùng type (vd. nhiều input number), lọc theo ngữ cảnh gần nhất (label/placeholder hoặc đếm số lượng input hiện có) thay vì lấy `.find()` đầu tiên — dễ nhầm sang input nền phía sau modal.
 
 ## Decisions Made

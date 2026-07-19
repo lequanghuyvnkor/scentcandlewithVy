@@ -70,6 +70,8 @@ export function AdminApp({ db, setDb, showToast }) {
   const [expandedST, setExpandedST] = useState(null);
   const [expandedProd, setExpandedProd] = useState(null);
   const [txRoleFilter, setTxRoleFilter] = useState("all");
+  const [reportFrom, setReportFrom] = useState("2026-06-19");
+  const [reportTo, setReportTo] = useState("2026-07-19");
   const demandStats = calculateDemandStats(db.orders);
 
   const updateStocktakeLine = (stId, materialId, patch) => {
@@ -247,6 +249,7 @@ export function AdminApp({ db, setDb, showToast }) {
     { id: "inventory", emoji: "🧺", label: "Kho" },
     { id: "logistics", emoji: "🚚", label: "Logistics" },
     { id: "customers", emoji: "👤", label: "Khách" },
+    { id: "reports", emoji: "📊", label: "Báo cáo" },
   ];
 
   const ttStyle = { background: T.card, border: `1.5px solid ${T.line}`, borderRadius: 12, fontSize: 11, color: T.text };
@@ -1118,6 +1121,187 @@ export function AdminApp({ db, setDb, showToast }) {
           })}
         </div>
       )}
+
+      {tab === "reports" &&
+        (() => {
+          // Báo cáo 1: Nhập-xuất-tồn theo kỳ — tồn đầu kỳ suy ngược từ tồn cuối kỳ hiện tại (nguồn sự thật duy nhất
+          // là sổ giao dịch, nên startQty = endQty - tổngNhập + tổngXuất luôn đúng miễn mọi biến động qua transaction).
+          const allItems = [
+            ...db.materials.map((m) => ({ id: m.id, name: m.name, emoji: m.emoji, unit: m.unit, qty: m.qty })),
+            ...db.products.map((p) => ({ id: p.id, name: RECIPES[p.id]?.name ?? p.id, emoji: RECIPES[p.id]?.emoji ?? "🕯️", unit: "cây", qty: p.qty })),
+          ];
+          const stockMovement = allItems
+            .map((item) => {
+              const txs = (db.transactions || []).filter((tx) => tx.itemId === item.id && tx.date && tx.date.slice(0, 10) >= reportFrom && tx.date.slice(0, 10) <= reportTo);
+              const totalIn = txs.filter((tx) => tx.type === "IN").reduce((s, tx) => s + tx.qty, 0);
+              const totalOut = txs.filter((tx) => tx.type === "OUT").reduce((s, tx) => s + Math.abs(tx.qty), 0);
+              const endQty = item.qty;
+              const startQty = endQty - totalIn + totalOut;
+              return { ...item, startQty, totalIn, totalOut, endQty };
+            })
+            .filter((r) => r.totalIn > 0 || r.totalOut > 0);
+
+          // Báo cáo 2: Hàng sắp hết hạn — gộp lô NVL (feat-001) và lô thành phẩm "available" (feat-008).
+          const materialBatchesExp = (db.batches || [])
+            .filter((b) => b.remainingQty > 0)
+            .map((b) => {
+              const m = db.materials.find((x) => x.id === b.materialId);
+              return { ...b, kind: "NVL", name: m?.name ?? b.materialId, emoji: m?.emoji ?? "🧺", unit: m?.unit ?? "" };
+            });
+          const productBatchesExp = (db.productBatches || [])
+            .filter((b) => b.remainingQty > 0 && b.status === "available")
+            .map((b) => ({ ...b, kind: "Thành phẩm", name: RECIPES[b.productId]?.name ?? b.productId, emoji: RECIPES[b.productId]?.emoji ?? "🕯️", unit: "cây" }));
+          const expiringSoon = [...materialBatchesExp, ...productBatchesExp]
+            .map((b) => ({ ...b, est: batchStatus(b.expiryDate) }))
+            .filter((b) => ["soon", "expired"].includes(b.est.level))
+            .sort((a, b) => (a.est.days ?? 0) - (b.est.days ?? 0));
+
+          // Báo cáo 3: Chênh lệch BOM — định mức vs tiêu hao thực tế trung bình/đơn vị, dựa trên lệnh sản xuất đã hoàn thành.
+          const byProduct = {};
+          for (const po of (db.productionOrders || []).filter((x) => x.status === "done")) {
+            byProduct[po.productId] ??= { totalQty: 0, actualUsage: {} };
+            byProduct[po.productId].totalQty += po.qty;
+            for (const tx of (db.transactions || []).filter((t) => t.refDoc === po.id && t.txType === "production_consume")) {
+              byProduct[po.productId].actualUsage[tx.itemId] = (byProduct[po.productId].actualUsage[tx.itemId] || 0) + Math.abs(tx.qty);
+            }
+          }
+          const bomVariance = [];
+          for (const [productId, data] of Object.entries(byProduct)) {
+            for (const [matId, perUnit] of BOM[productId] || []) {
+              const actualPerUnit = (data.actualUsage[matId] || 0) / data.totalQty;
+              const variancePct = perUnit > 0 ? ((actualPerUnit - perUnit) / perUnit) * 100 : 0;
+              bomVariance.push({ productId, matId, perUnit, actualPerUnit, variancePct, totalQty: data.totalQty });
+            }
+          }
+
+          // Báo cáo 4: Tỷ lệ hết hàng theo SKU — snapshot hiện tại (app chưa lưu lịch sử tồn kho theo ngày nên
+          // không tính được "% thời gian hết hàng" thật; đây là số SKU đang hết/tổng SKU đang bán tại thời điểm xem).
+          const activeProducts = db.products.filter((p) => p.active);
+          const stockoutList = activeProducts.map((p) => {
+            const sellable = productSellableQty(db.productBatches || [], p.id);
+            return { id: p.id, name: RECIPES[p.id]?.name ?? p.id, emoji: RECIPES[p.id]?.emoji ?? "🕯️", sellable, isOut: sellable <= 0 };
+          });
+          const stockoutRate = activeProducts.length > 0 ? (stockoutList.filter((s) => s.isOut).length / activeProducts.length) * 100 : 0;
+
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Card>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>1. Nhập - Xuất - Tồn theo kỳ 📆</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                    <span style={{ fontSize: 11, color: T.muted }}>đến</span>
+                    <input type="date" value={reportTo} onChange={(e) => setReportTo(e.target.value)} style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                  </div>
+                </div>
+                {stockMovement.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.muted }}>Không có biến động nào trong kỳ đã chọn.</div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+                      <thead>
+                        <tr style={{ textAlign: "left", background: T.soft }}>
+                          <th style={{ padding: "6px 10px" }}>Mặt hàng</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Đầu kỳ</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Nhập</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Xuất</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Cuối kỳ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stockMovement.map((r) => (
+                          <tr key={r.id} style={{ borderBottom: `1px dashed ${T.line}` }}>
+                            <td style={{ padding: "6px 10px" }}>{r.emoji} {r.name}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right" }}>{r.startQty.toLocaleString("vi-VN")}{r.unit}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.greenDeep, fontWeight: 700 }}>+{r.totalIn.toLocaleString("vi-VN")}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.redDeep, fontWeight: 700 }}>-{r.totalOut.toLocaleString("vi-VN")}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700 }}>{r.endQty.toLocaleString("vi-VN")}{r.unit}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>2. Hàng sắp hết hạn ⏳</div>
+                {expiringSoon.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.muted }}>Không có lô nào sắp/đã hết hạn 💗</div>
+                ) : (
+                  expiringSoon.map((b) => {
+                    const badgeStyle = b.est.level === "expired" ? ["#FBE3DA", T.redDeep] : ["#FFF2D6", T.yellowDeep];
+                    return (
+                      <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px dashed ${T.line}` }}>
+                        <span style={{ fontSize: 16 }}>{b.emoji}</span>
+                        <div style={{ flex: 1, fontSize: 11.5 }}>{b.name} <span style={{ color: T.muted, fontSize: 10 }}>({b.kind} · Lô {b.id})</span></div>
+                        <div style={{ fontSize: 11, fontWeight: 700 }}>{b.remainingQty.toLocaleString("vi-VN")}{b.unit}</div>
+                        <Badge color={badgeStyle[0]} deep={badgeStyle[1]}>{b.est.label}</Badge>
+                      </div>
+                    );
+                  })
+                )}
+              </Card>
+
+              <Card>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>3. Chênh lệch BOM — định mức vs thực tế 📐</div>
+                {bomVariance.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.muted }}>Chưa có lệnh sản xuất nào hoàn thành để so sánh.</div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+                      <thead>
+                        <tr style={{ textAlign: "left", background: T.soft }}>
+                          <th style={{ padding: "6px 10px" }}>Sản phẩm</th>
+                          <th style={{ padding: "6px 10px" }}>NVL</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Định mức (BOM)</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Thực tế TB/đơn vị</th>
+                          <th style={{ padding: "6px 10px", textAlign: "right" }}>Chênh lệch</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bomVariance.map((v) => {
+                          const material = db.materials.find((m) => m.id === v.matId);
+                          const overUse = v.variancePct > 5;
+                          return (
+                            <tr key={`${v.productId}-${v.matId}`} style={{ borderBottom: `1px dashed ${T.line}` }}>
+                              <td style={{ padding: "6px 10px" }}>{RECIPES[v.productId]?.emoji} {RECIPES[v.productId]?.name}</td>
+                              <td style={{ padding: "6px 10px" }}>{material?.emoji} {material?.name}</td>
+                              <td style={{ padding: "6px 10px", textAlign: "right" }}>{v.perUnit.toLocaleString("vi-VN")}{material?.unit}</td>
+                              <td style={{ padding: "6px 10px", textAlign: "right" }}>{v.actualPerUnit.toFixed(1)}{material?.unit}</td>
+                              <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700, color: overUse ? T.redDeep : v.variancePct < -5 ? T.blueDeep : T.greenDeep }}>
+                                {v.variancePct > 0 ? "+" : ""}{v.variancePct.toFixed(1)}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>4. Tỷ lệ hết hàng theo SKU 🚨</div>
+                <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>
+                  Snapshot tại thời điểm xem (app chưa lưu lịch sử tồn kho theo ngày nên chưa tính được % thời gian hết hàng thực sự).
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
+                  Đang hết hàng: <span style={{ color: stockoutRate > 0 ? T.redDeep : T.greenDeep }}>{stockoutRate.toFixed(0)}%</span> SKU ({stockoutList.filter((s) => s.isOut).length}/{activeProducts.length})
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+                  {stockoutList.map((s) => (
+                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px", background: s.isOut ? "#FBE3DA" : T.soft, borderRadius: 8 }}>
+                      <span>{s.emoji}</span>
+                      <div style={{ flex: 1, fontSize: 11 }}>{s.name}</div>
+                      <b style={{ fontSize: 11, color: s.isOut ? T.redDeep : T.text }}>{s.sellable}</b>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          );
+        })()}
 
       {tab === "logistics" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
