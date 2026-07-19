@@ -2,9 +2,11 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 22:15
-**Session ID:** feat-006
-**Active Feature:** feat-006 - Hoàn thiện sổ giao dịch kho (actor/txType/refDoc/batchId) — DONE
+**Last Updated:** 2026-07-19 22:45
+**Session ID:** feat-005
+**Active Feature:** feat-005 (rescoped) - Vai trò thao tác cho báo cáo/lọc — DONE
+
+**Toàn bộ 10 feature trong feature-list.json đã hoàn thành (feat-001 → feat-010 chưa — còn feat-008, feat-009, feat-010).** Đã làm xong: feat-001, feat-002, feat-003, feat-004, feat-007, feat-006, feat-005 (7/10). Còn lại: feat-008 (trạng thái tồn thành phẩm chi tiết), feat-009 (giá thanh lý 3 cấp), feat-010 (báo cáo quản trị) — chưa được yêu cầu làm, chờ chỉ đạo tiếp theo.
 
 **QUAN TRỌNG — bối cảnh doanh nghiệp (user cung cấp 2026-07-19):** Đây là doanh nghiệp 1 người — chủ vừa quản lý vừa trực tiếp sản xuất, không có nhân viên riêng biệt. User yêu cầu: giữ nguyên toàn bộ tính năng quản lý hiện có (không bỏ bớt), nhưng feat-005 (phân quyền) KHÔNG nên xây dựng theo hướng chặn/giới hạn quyền giữa các vai trò (vì chỉ có 1 người thật). Đã thống nhất hướng đi: feat-005 sẽ là "gắn nhãn vai trò đang thao tác" (Kho/Sản xuất/Quản lý/Chủ shop) vào transaction — dùng để LỌC/BÁO CÁO sau này, không dùng để CHẶN thao tác. Ghép chung cơ chế với trường "người thực hiện" của feat-006 cho gọn (cùng là việc gắn nhãn ai/vai trò gì làm hành động, không phải access-control thật).
 
@@ -33,13 +35,19 @@
   - Verify sống: đổi vai trò sang "Nhân viên kho" → ghi hao hụt "hết hạn" cho đúng LOT-4 (180ml, xác nhận LOT-3 không bị đụng) → sổ giao dịch hiện đúng "Hàng hết hạn · Lô: LOT-4" + actor đúng; khách trả 1 cây Lotus Dream trên DH-001 → sổ giao dịch hiện "Khách trả hàng · Chứng từ: DH-001", tồn sẵn bán Lotus Dream 0→1.
   - Việc hoãn lại (nêu trong mô tả gốc nhưng không đủ hạ tầng): "chuyển vị trí kho" (chưa có khái niệm nhiều vị trí lưu kho) và "hàng dùng thử/tặng khách" (chưa có luồng riêng).
 
+- [x] **feat-005 hoàn thành (rescoped)**: dùng thẳng dữ liệu `actorRole` feat-006 vừa dựng, không cần cơ chế gắn nhãn mới.
+  - Dashboard: card "Hoạt động theo vai trò 👤" — mỗi vai trò hiện số giao dịch + ngày hoạt động gần nhất, tính trực tiếp từ `db.transactions`.
+  - Kho tab: dropdown "Lọc theo vai trò" trên bảng Lịch sử biến động kho, lọc đúng danh sách đã hiển thị (kể cả txType/batchId/refDoc), có thông báo trống riêng khi lọc ra 0 kết quả (khác với "chưa có giao dịch nào").
+  - CHỦ ĐỘNG KHÔNG làm phần "xác nhận nhẹ" từng nhắc trong mô tả rescoped — tự đánh giá là hình thức vô nghĩa khi chỉ 1 người tự duyệt cho chính mình; actorRole đã ghi nhận đúng "đang đội mũ vai trò gì lúc đó" là đủ cho mục đích F17 với doanh nghiệp 1 người.
+  - Verify sống: đổi vai trò "sanxuat", hoàn tất 1 lệnh sản xuất (7 dòng sổ) → thẻ Dashboard hiện đúng "7 giao dịch · Gần nhất: 19/7/2026" cho Nhân viên sản xuất, các vai trò khác vẫn 0; lọc bảng theo "sanxuat" → đúng 7 dòng đó (mỗi dòng vẫn giữ đúng batchId riêng); lọc theo vai trò chưa có hoạt động ("chuso") → đúng thông báo trống riêng biệt.
+
 ### What's In Progress
 
-- (không có — feat-007, feat-006 đã xong. Chuẩn bị làm feat-005 rescoped.)
+- (không có — toàn bộ 3 feature còn lại từ yêu cầu "làm feat 5 6 7" đã xong: feat-007 → feat-006 → feat-005, đúng thứ tự đã chọn.)
 
 ### What's Next
 
-1. **feat-005** (rescoped: dùng dữ liệu `actorRole` feat-006 vừa dựng để làm báo cáo/lọc theo vai trò, KHÔNG chặn quyền truy cập nào) — làm tiếp theo, feature cuối cùng trong đợt này.
+- Hỏi user muốn làm gì tiếp theo. Còn lại trong feature-list.json: feat-008 (trạng thái tồn thành phẩm chi tiết), feat-009 (giá thanh lý 3 cấp), feat-010 (báo cáo quản trị) — cả 3 đều đã đủ điều kiện dependency, chưa có yêu cầu nào về thứ tự.
 
 ## Blockers / Risks
 

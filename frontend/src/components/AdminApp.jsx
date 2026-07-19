@@ -67,6 +67,7 @@ export function AdminApp({ db, setDb, showToast }) {
   const [optSalvage, setOptSalvage] = useState(30);
   const [expandedMat, setExpandedMat] = useState(null);
   const [expandedST, setExpandedST] = useState(null);
+  const [txRoleFilter, setTxRoleFilter] = useState("all");
   const demandStats = calculateDemandStats(db.orders);
 
   const updateStocktakeLine = (stId, materialId, patch) => {
@@ -308,6 +309,13 @@ export function AdminApp({ db, setDb, showToast }) {
             .sort((a, b) => b.sold - a.sold);
           const customOrders = db.orders.filter((o) => o.items.some((it) => it.type === "custom"));
 
+          // F17 rescoped (doanh nghiệp 1 người) — báo cáo hoạt động theo vai trò đang gắn nhãn, không phải access-control.
+          const roleActivity = ROLES.map((r) => {
+            const txs = (db.transactions || []).filter((tx) => tx.actorRole === r.id);
+            const lastTx = txs[txs.length - 1];
+            return { ...r, count: txs.length, lastDate: lastTx?.date };
+          });
+
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
@@ -389,6 +397,23 @@ export function AdminApp({ db, setDb, showToast }) {
                   ))}
                 </Card>
               </div>
+              <Card>
+                <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Hoạt động theo vai trò 👤</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+                  {roleActivity.map((r) => (
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.soft, borderRadius: 10 }}>
+                      <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 700 }}>{r.label}</div>
+                        <div style={{ fontSize: 10, color: T.muted }}>
+                          {r.lastDate ? `Gần nhất: ${new Date(r.lastDate).toLocaleDateString("vi-VN")}` : "Chưa có hoạt động"}
+                        </div>
+                      </div>
+                      <Badge color={T.pinkSoft} deep={T.pinkDeep}>{r.count} giao dịch</Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
           );
         })()}
@@ -904,7 +929,22 @@ export function AdminApp({ db, setDb, showToast }) {
           })}
           
           <div style={{ marginTop: 24 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>Lịch sử biến động kho 📋</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Lịch sử biến động kho 📋</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 10.5, color: T.muted }}>Lọc theo vai trò:</span>
+                <select
+                  value={txRoleFilter}
+                  onChange={(e) => setTxRoleFilter(e.target.value)}
+                  style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "inherit", color: T.text, background: "#fff" }}
+                >
+                  <option value="all">Tất cả</option>
+                  {ROLES.map((r) => (
+                    <option key={r.id} value={r.id}>{r.emoji} {r.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div style={{ background: T.soft, borderRadius: 12, overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
                 <thead>
@@ -918,7 +958,7 @@ export function AdminApp({ db, setDb, showToast }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {([...(db.transactions || [])].reverse().slice(0, 15).map(tx => {
+                  {([...(db.transactions || [])].filter((tx) => txRoleFilter === "all" || tx.actorRole === txRoleFilter).reverse().slice(0, 15).map(tx => {
                     const isIN = tx.type === "IN";
                     const role = ROLES.find((r) => r.id === tx.actorRole);
                     return (
@@ -947,8 +987,8 @@ export function AdminApp({ db, setDb, showToast }) {
                       </tr>
                     );
                   }))}
-                  {(!db.transactions || db.transactions.length === 0) && (
-                    <tr><td colSpan={6} style={{ padding: "16px", textAlign: "center", color: T.muted }}>Chưa có giao dịch nào</td></tr>
+                  {(!db.transactions || db.transactions.filter((tx) => txRoleFilter === "all" || tx.actorRole === txRoleFilter).length === 0) && (
+                    <tr><td colSpan={6} style={{ padding: "16px", textAlign: "center", color: T.muted }}>{txRoleFilter === "all" ? "Chưa có giao dịch nào" : "Không có giao dịch nào của vai trò này"}</td></tr>
                   )}
                 </tbody>
               </table>
