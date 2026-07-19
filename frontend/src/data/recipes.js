@@ -202,5 +202,20 @@ export const SEED = {
     { id: "PUR-1", materialId: "oil-jasmine", supplierId: "SUP-2", qty: 1000, unitCost: 2.1, status: "in_transit", createdDate: "2026-07-15", expectedDate: "2026-07-21", receivedDate: null },
     { id: "PUR-2", materialId: "jar-bottle",  supplierId: "SUP-4", qty: 20,   unitCost: 21000, status: "draft", createdDate: "2026-07-18", expectedDate: "2026-07-22", receivedDate: null },
   ],
-  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3,
+  // ═══ Kiểm kê kho (F16) — chốt số liệu hệ thống khi tạo phiếu, nhập số thực tế, giải trình chênh lệch,
+  // hoàn tất mới sinh giao dịch điều chỉnh. Phiếu demo dưới đây đang dở: đã đếm+giải trình 1/3 dòng.
+  stocktakes: [
+    {
+      id: "ST-1",
+      createdDate: "2026-07-17",
+      status: "counting",
+      completedDate: null,
+      lines: [
+        { materialId: "jar-round", systemQty: 60, actualQty: 58, note: "Vỡ 2 cái khi sắp xếp lại kho" },
+        { materialId: "wick-md", systemQty: 150, actualQty: null, note: "" },
+        { materialId: "oil-sage", systemQty: 240, actualQty: null, note: "" },
+      ],
+    },
+  ],
+  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3, nextStNum: 2,
 };

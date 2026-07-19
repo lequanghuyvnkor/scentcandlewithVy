@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 20:15
-**Session ID:** feat-003
-**Active Feature:** feat-003 - Quy trình đơn mua hàng (PO) tách khỏi nhập kho tức thời — DONE
+**Last Updated:** 2026-07-19 21:00
+**Session ID:** feat-004
+**Active Feature:** feat-004 - Kiểm kê kho (Stocktake) — DONE
 
 ## Status
 
@@ -12,58 +12,56 @@
 
 - [x] Đối chiếu codebase với bản kế hoạch "Định hình tính năng quản lý kho hàng", dựng bộ harness (`AGENTS.md`, `feature-list.json`, `init.sh`, `progress.md`, `session-handoff.md`)
 - [x] Sửa 2 lỗi baseline có sẵn (thiếu ESLint config, 2 lỗi `react/no-unescaped-entities`) để `./init.sh` chạy sạch
-- [x] **feat-001 hoàn thành**: batch/lot tracking + FEFO/FIFO. Đã commit + push (`4b9a1d5`).
-- [x] **feat-002 hoàn thành**: nhà cung cấp + MOQ + quy cách đóng gói trên từng NVL. Đã commit + push (`f7b720b`).
-- [x] **feat-003 hoàn thành**: đơn mua hàng (PO) tách khỏi nhập kho tức thời.
-  - `db.purchaseOrders` mới (draft → sent → in_transit → received/cancelled), seed 2 đơn demo.
-  - Tab mới "🛒 Mua hàng": danh sách PO + nút chuyển trạng thái theo Kanban 1 chiều (giống pattern đơn hàng bán/lệnh sản xuất đã có), badge đếm đơn đang hoạt động (draft/sent/in_transit).
-  - `RestockModal` đổi thành `NewPurchaseOrderModal` — nút "+ Nhập" ở Kho tab đổi tên thành "+ Đặt hàng" và giờ chỉ TẠO ĐƠN MUA (nháp), không cộng thẳng vào tồn kho nữa. Modal hỗ trợ 2 chế độ: preset (mở từ dòng NVL trong Kho, có gợi ý AI như cũ) và tự do (mở từ tab Mua hàng, có dropdown chọn NVL).
-  - `ReceivePOModal` mới — chỗ DUY NHẤT còn tạo lô (feat-001) + giao dịch IN, khi bấm "Nhận hàng" ở đơn `in_transit`; hỏi số lượng thực nhận + hạn dùng lúc đó (đúng thời điểm biết hạn dùng thật).
-  - `inventoryPos` giờ tính `onOrder` từ PO trạng thái `sent`/`in_transit` (draft không tính — chưa phải cam kết thật với NCC) và thêm field `position = onHand + onOrder - reserved` (đúng công thức Inventory Position trong F02). Toàn bộ logic quyết định ROP/SS/màu trạng thái/suggest qty và `lowStock` chuyển từ dùng `available` sang dùng `position` (nguyên tắc #3 của kế hoạch: đề xuất phải dựa trên Inventory Position).
-  - Verify sống trên browser: nhận hàng PUR-1 (oil-jasmine) → tạo lô mới, qty 200→1200, badge 2→1; chuyển PUR-2 (jar-bottle) draft→sent → "Đang về: 20" xuất hiện đúng lúc (không hiện khi còn draft); tạo đơn mới qua dropdown chọn oil-oud → tự động điền đúng NCC/lead time, expectedDate = createdDate+12 ngày; huỷ đơn → badge giảm đúng.
-- [x] `./init.sh` sạch sau cả 3 feature (lint 0 lỗi/8 warning vô hại, build qua)
+- [x] **feat-001 hoàn thành** (batch/lot + FEFO/FIFO). Commit + push `4b9a1d5`.
+- [x] **feat-002 hoàn thành** (nhà cung cấp + MOQ + quy cách đóng gói). Commit + push `f7b720b`.
+- [x] **feat-003 hoàn thành** (đơn mua hàng tách khỏi nhập kho tức thời, Inventory Position). Commit + push `e6d136b`.
+- [x] **feat-004 hoàn thành**: kiểm kê kho.
+  - `db.stocktakes` mới, mỗi phiếu có `lines: [{materialId, systemQty, actualQty, note}]`. Tạo phiếu = chọn NVL (mặc định chọn hết) → chốt `systemQty` ngay lúc tạo → trạng thái "counting".
+  - Tab mới "📋 Kiểm kê": mỗi phiếu mở rộng ra xem từng dòng, nhập số thực tế (khi đang "counting"), chênh lệch tính live, ô lý do CHỈ hiện + bắt buộc khi có chênh lệch. Nút "Hoàn tất kiểm kê" bị khoá tới khi mọi dòng đã đếm VÀ mọi dòng lệch đã có lý do.
+  - `completeStocktake`: chênh lệch dương → tạo lô mới `ADJ-N` (IN); chênh lệch âm → trừ qua `consumeMaterialBatches` (FEFO/FIFO) như các luồng xuất kho khác (OUT). Không sửa tay `material.qty` — đúng nguyên tắc #1.
+  - Verify sống trên browser: mở ST-1 (seed sẵn 1 dòng đã đếm+giải trình, 2 dòng chưa) → nút Hoàn tất khoá đúng; nhập 2 dòng còn lại (1 dòng lệch 0 không cần lý do, 1 dòng lệch -5 cần lý do) → nút chỉ mở sau khi điền lý do; hoàn tất → đúng 2 giao dịch OUT tham chiếu đúng mã phiếu + lý do, không nhân đôi; Kho tab xác nhận jar-round 60→58, oil-sage 240→235, vẫn 1 lô (trừ từ lô có sẵn, không tạo lô âm).
+- [x] `./init.sh` sạch sau cả 4 feature (lint 0 lỗi/8 warning vô hại, build qua)
 
 ### What's In Progress
 
-- [ ] (không có — feat-003 đã đóng, sẵn sàng làm feat-004)
+- [ ] (không có — feat-004 đã đóng, đã làm xong đúng thứ tự feat-003 → feat-004 theo yêu cầu user)
 
 ### What's Next
 
-1. **feat-004 (Kiểm kê kho)** — user yêu cầu làm tuần tự feat-003 xong mới tới feat-004, giờ bắt đầu.
-2. Sau feat-004: feat-005 (phân quyền) đủ điều kiện nhưng cần hỏi user về kiến trúc backend trước.
+- Hỏi user muốn làm feature nào tiếp theo. feat-005 (phân quyền) giờ đủ điều kiện dependency nhưng cần quyết định kiến trúc backend trước khi code (xem Blockers). feat-006 (sổ giao dịch đầy đủ), feat-007 (làm tròn MOQ), feat-008 (trạng thái tồn thành phẩm), feat-010 (báo cáo) đều đã đủ điều kiện dependency và không cần quyết định kiến trúc gì thêm.
 
 ## Blockers / Risks
 
 - [ ] feat-005 (phân quyền) cần quyết định kiến trúc: bật backend Express thật hay tiếp tục client-only — hỏi user trước khi code.
 - [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng.
 - [ ] Giới hạn đã biết trong feat-001: hoàn kho đơn custom tạo lô "hoàn trả" mới thay vì truy ngược đúng lô gốc.
-- [ ] feat-003 chưa liên kết PO với chuyển động giữ chỗ NVL cho sản xuất (vd. một PO "sắp về" không tự động gợi ý ưu tiên cho lệnh sản xuất đang thiếu NVL) — nằm ngoài phạm vi mô tả feat-003, có thể là việc của feat-004 nâng cao sau này (giai đoạn 4 trong kế hoạch gốc).
-- [ ] Môi trường browser-test của session này: `computer` tool's `left_click` trên nút đôi khi không kích hoạt onClick của React một cách đáng tin cậy. Cách xử lý ổn định trong session: tìm nút qua `document.querySelectorAll('button')`, lấy prop `__reactProps...`, gọi trực tiếp `props.onClick(...)` qua `javascript_tool`. Luôn tách hành động (click/nhập) và bước kiểm tra kết quả thành 2 lời gọi `javascript_exec` riêng biệt — gộp chung trong 1 script đôi khi đọc state cũ do timing.
+- [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê (F16 có nhắc "người có quyền phê duyệt") — vì hệ thống chưa có phân quyền (feat-005 chưa làm), bất kỳ ai vào Admin cũng tự hoàn tất được. Sẽ khoá lại đúng vai trò khi feat-005 xong.
+- [ ] Môi trường browser-test của session này: `computer` tool's `left_click` không đáng tin cậy. Cách xử lý ổn định: tìm nút qua `document.querySelectorAll('button')`, gọi trực tiếp `element[reactPropsKey].onClick(...)` qua `javascript_tool`, và LUÔN tách hành động và bước kiểm tra thành 2 lời gọi `javascript_exec` riêng (gộp chung dễ đọc phải state cũ do timing).
 
 ## Decisions Made
 
 - **Batches là nguồn sự thật duy nhất, `material.qty` chỉ là cache đồng bộ.**
-- **feat-002 không xây dựng UI CRUD nhà cung cấp riêng** — chỉ dữ liệu + hiển thị.
-- **feat-003: draft không tính vào `onOrder`** — chỉ `sent`/`in_transit` là cam kết thật với NCC, khớp định nghĩa "Đang về" trong F02 (số lượng đã đặt mua, không phải mới nháp nội bộ).
-- **feat-003: chuyển toàn bộ logic quyết định (ROP/SS/suggest/lowStock) từ `available` sang `position`** — bắt buộc phải làm ngay khi `onOrder` bắt đầu có giá trị thật (trước đó `onOrder` luôn 0 nên `available` và `position` trùng nhau, giờ khác nhau thật sự). Đây là nguyên tắc #3 trong kế hoạch gốc, không phải scope creep.
-- **feat-003: nhận hàng không cho nhận từng phần theo % mà chỉ chỉnh số lượng thực nhận 1 lần** — giữ đơn giản, đúng phạm vi mô tả feature (không yêu cầu partial receipt phức tạp).
+- **feat-003: draft không tính vào `onOrder`; mọi logic quyết định (ROP/SS/suggest/lowStock) dùng `position` thay vì `available`.**
+- **feat-004: "chốt số liệu hệ thống" xảy ra ngay lúc TẠO phiếu** (không có bước "draft" riêng trước khi chốt) — khớp đúng thứ tự 2 bước đầu trong mô tả feature ("tạo phiếu" + "chốt số liệu" gộp làm một hành động).
+- **feat-004: chênh lệch dương tạo lô mới (ADJ-N), chênh lệch âm trừ qua FEFO/FIFO từ lô có sẵn** — nhất quán với cách feat-001 đã xử lý xuất/nhập, không cần cơ chế riêng.
+- **feat-004: không làm approval/role gate** — vì phân quyền (feat-005) chưa được quyết định kiến trúc, thêm gate giả (không backend thật) sẽ vô nghĩa; ghi rõ giới hạn này để feat-005 quay lại xử lý.
 
-## Files Modified This Session (tính từ đầu phiên, gồm cả feat-001/002/003)
+## Files Modified This Session (từ đầu phiên, gồm feat-001/002/003/004)
 
 - `AGENTS.md`, `feature-list.json`, `feature-list.schema.json`, `init.sh`, `progress.md`, `session-handoff.md` — bộ harness
 - `.claude/launch.json` — cấu hình preview dev server
 - `frontend/.eslintrc.cjs` — baseline fix (ESLint config)
 - `frontend/src/components/SimulationTab.jsx` — sửa lỗi lint có sẵn + fix bug nhân đôi transaction (feat-001)
-- `frontend/src/utils/batches.js` — mới, logic FEFO/FIFO (feat-001)
-- `frontend/src/data/recipes.js` — `SEED.batches` (feat-001); `SEED.suppliers`+ fields trên materials (feat-002); `SEED.purchaseOrders`+`nextPurNum` (feat-003)
-- `frontend/src/components/AdminApp.jsx` — batch consumption + UI lô (feat-001); NCC/MOQ/đóng gói + fix default L/sL (feat-002); tab Mua hàng, PO_STATUSES, NewPurchaseOrderModal, ReceivePOModal, inventoryPos.onOrder/.position (feat-003)
+- `frontend/src/utils/batches.js` — logic FEFO/FIFO (feat-001), dùng lại nguyên trong feat-004
+- `frontend/src/data/recipes.js` — `SEED.batches` (feat-001); `SEED.suppliers`+fields (feat-002); `SEED.purchaseOrders` (feat-003); `SEED.stocktakes` (feat-004)
+- `frontend/src/components/AdminApp.jsx` — batch consumption + UI lô (feat-001); NCC/MOQ/đóng gói (feat-002); tab Mua hàng + PO modals + Inventory Position (feat-003); tab Kiểm kê + NewStocktakeModal + completeStocktake (feat-004)
 
 ## Evidence of Completion
 
-- [x] `./init.sh`: lint 0 lỗi, build thành công — chạy lại sau feat-003.
-- [x] Verify tay trên browser cho cả 3 feature — chi tiết đầy đủ trong `feature-list.json`.
-- [x] feat-001 (`4b9a1d5`) và feat-002 (`f7b720b`) đã push lên `origin/main`. feat-003 chưa commit tại thời điểm ghi file này.
+- [x] `./init.sh`: lint 0 lỗi, build thành công — chạy lại sau feat-004.
+- [x] Verify tay trên browser cho cả 4 feature — chi tiết đầy đủ trong `feature-list.json`.
+- [x] feat-001 (`4b9a1d5`), feat-002 (`f7b720b`), feat-003 (`e6d136b`) đã push lên `origin/main`. feat-004 chưa commit tại thời điểm ghi file này.
 
 ## Notes for Next Session
 
-feat-001, feat-002, feat-003 đã xong và verify. Nếu feat-003 chưa được commit/push khi đọc file này, hỏi user trước khi push. Tiếp theo: feat-004 (Kiểm kê kho) theo đúng thứ tự user yêu cầu.
+feat-001 → feat-004 đã xong và verify đầy đủ, đúng thứ tự user yêu cầu (feat-003 xong mới tới feat-004). Nếu feat-004 chưa được commit/push khi đọc file này, hỏi user trước khi push. Hỏi user muốn làm feature nào tiếp theo — không có yêu cầu thứ tự cụ thể nào khác đã được đưa ra.

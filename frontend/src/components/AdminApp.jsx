@@ -5,7 +5,7 @@ import { RECIPES, BOM, LINES, STATUSES_DEF, WAX } from "../data/recipes";
 import { Card, Btn, Input, Badge, Modal } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
 import { fmtVND, orderTotal, itemDisplay, materialsNeededForItems, productsNeededForItems, checkStockForItems, calculateDemandStats, NORMSINV, gaussianPDF } from "../utils/formatters";
-import { consumeManyBatches, syncMaterialQtyFromBatches, sortForConsumption, batchStatus } from "../utils/batches";
+import { consumeManyBatches, consumeMaterialBatches, syncMaterialQtyFromBatches, sortForConsumption, batchStatus } from "../utils/batches";
 
 const STATUS_COLORS = {
   new: { color: T.blue, deep: T.blueDeep },
@@ -43,7 +43,55 @@ export function AdminApp({ db, setDb, showToast }) {
   const [optCost, setOptCost] = useState(80);
   const [optSalvage, setOptSalvage] = useState(30);
   const [expandedMat, setExpandedMat] = useState(null);
+  const [expandedST, setExpandedST] = useState(null);
   const demandStats = calculateDemandStats(db.orders);
+
+  const updateStocktakeLine = (stId, materialId, patch) => {
+    setDb((d) => ({
+      ...d,
+      stocktakes: (d.stocktakes || []).map((st) =>
+        st.id !== stId ? st : { ...st, lines: st.lines.map((l) => (l.materialId === materialId ? { ...l, ...patch } : l)) }
+      ),
+    }));
+  };
+
+  const completeStocktake = (stId) => {
+    setDb((d) => {
+      const st = (d.stocktakes || []).find((s) => s.id === stId);
+      if (!st) return d;
+      let batches = d.batches || [];
+      const transactions = [...(d.transactions || [])];
+      let nextTxNum = d.nextTxNum || 1;
+      let nextBatchNum = d.nextBatchNum || 1;
+      const today = new Date().toISOString().slice(0, 10);
+
+      for (const line of st.lines) {
+        const diff = (line.actualQty ?? line.systemQty) - line.systemQty;
+        if (diff === 0) continue;
+        if (diff > 0) {
+          const mat = d.materials.find((m) => m.id === line.materialId);
+          batches = [...batches, { id: `ADJ-${nextBatchNum++}`, materialId: line.materialId, receivedDate: today, expiryDate: null, initialQty: diff, remainingQty: diff, unitCost: mat?.price ?? 0, qcStatus: "passed", note: `Điều chỉnh kiểm kê ${st.id}` }];
+          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", itemId: line.materialId, qty: diff, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thừa so với hệ thống"}`, date: new Date().toISOString() });
+        } else {
+          const need = Math.abs(diff);
+          const consumed = consumeMaterialBatches(batches, line.materialId, need);
+          batches = consumed.batches;
+          transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", itemId: line.materialId, qty: -need, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thiếu so với hệ thống"}`, date: new Date().toISOString(), consumedFrom: consumed.consumedFrom });
+        }
+      }
+      const materials = syncMaterialQtyFromBatches(d.materials, batches);
+      return {
+        ...d,
+        batches,
+        nextBatchNum,
+        transactions,
+        nextTxNum,
+        materials,
+        stocktakes: d.stocktakes.map((s) => (s.id === stId ? { ...s, status: "completed", completedDate: today } : s)),
+      };
+    });
+    showToast("Đã hoàn tất kiểm kê và tạo giao dịch điều chỉnh! ✅");
+  };
 
   const moveOrder = (orderId, newStatus) => {
     setDb((d) => {
@@ -145,6 +193,7 @@ export function AdminApp({ db, setDb, showToast }) {
                            db.products.reduce((sum, p) => sum + (inventoryPos[p.id]?.onHand || 0) * (p.cost || 0), 0);
 
   const activePOs = (db.purchaseOrders || []).filter((po) => ["draft", "sent", "in_transit"].includes(po.status));
+  const activeSTs = (db.stocktakes || []).filter((st) => st.status === "counting");
 
   const TABS = [
     { id: "dashboard", emoji: "🏠", label: "Tổng quan" },
@@ -152,6 +201,7 @@ export function AdminApp({ db, setDb, showToast }) {
     { id: "products", emoji: "🕯️", label: "Sản phẩm" },
     { id: "production", emoji: "🏭", label: "Sản xuất" },
     { id: "purchasing", emoji: "🛒", label: "Mua hàng" },
+    { id: "stocktake", emoji: "📋", label: "Kiểm kê" },
     { id: "inventory", emoji: "🧺", label: "Kho" },
     { id: "logistics", emoji: "🚚", label: "Logistics" },
     { id: "customers", emoji: "👤", label: "Khách" },
@@ -185,6 +235,9 @@ export function AdminApp({ db, setDb, showToast }) {
             )}
             {t.id === "purchasing" && activePOs.length > 0 && (
               <span style={{ marginLeft: 5, background: T.blueDeep, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{activePOs.length}</span>
+            )}
+            {t.id === "stocktake" && activeSTs.length > 0 && (
+              <span style={{ marginLeft: 5, background: T.yellowDeep, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{activeSTs.length}</span>
             )}
           </button>
         ))}
@@ -573,6 +626,102 @@ export function AdminApp({ db, setDb, showToast }) {
                       <Btn small danger onClick={() => advance("cancelled")}>Huỷ</Btn>
                     )}
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {tab === "stocktake" && (
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Kiểm kê kho 📋</div>
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Chốt số liệu hệ thống khi tạo phiếu → nhập số thực tế → giải trình chênh lệch → hoàn tất sẽ tự sinh giao dịch điều chỉnh. Không sửa tay số tồn kho.</div>
+            </div>
+            <Btn primary onClick={() => setModal({ type: "newStocktake" })}>+ Tạo phiếu kiểm kê</Btn>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(!db.stocktakes || db.stocktakes.length === 0) && (
+              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có phiếu kiểm kê nào 📋</div>
+            )}
+            {[...(db.stocktakes || [])].reverse().map((st) => {
+              const isExpanded = expandedST === st.id;
+              const pendingCount = st.lines.filter((l) => l.actualQty === null).length;
+              const diffLines = st.lines.filter((l) => l.actualQty !== null && l.actualQty !== l.systemQty);
+              const needsNoteCount = diffLines.filter((l) => !l.note.trim()).length;
+              const canComplete = st.status === "counting" && pendingCount === 0 && needsNoteCount === 0;
+
+              return (
+                <div key={st.id} style={{ background: "#fff", borderRadius: 12, border: `1px solid ${T.line}`, padding: "12px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{st.id} — {st.lines.length} nguyên vật liệu</div>
+                      <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
+                        Tạo ngày {new Date(st.createdDate).toLocaleDateString("vi-VN")}
+                        {st.status === "completed" && ` · Hoàn tất ${new Date(st.completedDate).toLocaleDateString("vi-VN")} · ${diffLines.length} dòng điều chỉnh`}
+                        {st.status === "counting" && pendingCount > 0 && ` · còn ${pendingCount} chưa đếm`}
+                        {st.status === "counting" && needsNoteCount > 0 && ` · ${needsNoteCount} dòng cần giải trình`}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <Badge color={st.status === "completed" ? "#E4F0D8" : T.yellow} deep={st.status === "completed" ? T.greenDeep : T.yellowDeep}>
+                        {st.status === "completed" ? "✅ Hoàn tất" : "🔎 Đang đếm"}
+                      </Badge>
+                      <Btn small onClick={() => setExpandedST(isExpanded ? null : st.id)}>{isExpanded ? "Thu gọn" : "Xem chi tiết"}</Btn>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ marginTop: 12, background: T.soft, borderRadius: 10, padding: "10px 12px" }}>
+                      {st.lines.map((l) => {
+                        const material = db.materials.find((m) => m.id === l.materialId);
+                        const diff = l.actualQty === null ? null : l.actualQty - l.systemQty;
+                        const diffColor = diff === null || diff === 0 ? T.muted : diff > 0 ? T.blueDeep : T.redDeep;
+                        return (
+                          <div key={l.materialId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px dashed ${T.line}`, flexWrap: "wrap" }}>
+                            <div style={{ minWidth: 150, fontSize: 12, fontWeight: 700 }}>{material?.emoji} {material?.name}</div>
+                            <div style={{ fontSize: 11, color: T.muted, minWidth: 100 }}>Hệ thống: {l.systemQty.toLocaleString("vi-VN")}{material?.unit}</div>
+                            {st.status === "counting" ? (
+                              <input
+                                type="number"
+                                placeholder="Số thực tế"
+                                value={l.actualQty ?? ""}
+                                onChange={(e) => updateStocktakeLine(st.id, l.materialId, { actualQty: e.target.value === "" ? null : parseFloat(e.target.value) })}
+                                style={{ width: 90, padding: "4px 6px", fontSize: 11, border: `1px solid ${T.line}`, borderRadius: 6, outline: "none" }}
+                              />
+                            ) : (
+                              <div style={{ fontSize: 11, minWidth: 90 }}>Thực tế: {l.actualQty?.toLocaleString("vi-VN")}{material?.unit}</div>
+                            )}
+                            <div style={{ fontSize: 11, fontWeight: 700, color: diffColor, minWidth: 60 }}>
+                              {diff !== null && (diff > 0 ? `+${diff}` : diff)}
+                            </div>
+                            {diff !== null && diff !== 0 && (
+                              st.status === "counting" ? (
+                                <input
+                                  type="text"
+                                  placeholder="Lý do chênh lệch (bắt buộc)..."
+                                  value={l.note}
+                                  onChange={(e) => updateStocktakeLine(st.id, l.materialId, { note: e.target.value })}
+                                  style={{ flex: 1, minWidth: 160, padding: "4px 8px", fontSize: 11, border: `1px solid ${!l.note.trim() ? T.red : T.line}`, borderRadius: 6, outline: "none" }}
+                                />
+                              ) : (
+                                <div style={{ fontSize: 11, color: T.muted, fontStyle: "italic" }}>{l.note}</div>
+                              )
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {st.status === "counting" && (
+                    <Btn primary disabled={!canComplete} style={{ marginTop: 12 }} onClick={() => completeStocktake(st.id)}>
+                      Hoàn tất kiểm kê ✅
+                    </Btn>
+                  )}
                 </div>
               );
             })}
@@ -1036,6 +1185,25 @@ export function AdminApp({ db, setDb, showToast }) {
           }}
         />
       )}
+      {modal?.type === "newStocktake" && (
+        <NewStocktakeModal
+          materials={db.materials}
+          onClose={() => setModal(null)}
+          onSave={(materialIds) => {
+            setDb((d) => {
+              const nextStNum = d.nextStNum || 1;
+              const lines = materialIds.map((id) => {
+                const m = d.materials.find((x) => x.id === id);
+                return { materialId: id, systemQty: m?.qty ?? 0, actualQty: null, note: "" };
+              });
+              const st = { id: `ST-${nextStNum}`, createdDate: new Date().toISOString().slice(0, 10), status: "counting", lines, completedDate: null };
+              return { ...d, stocktakes: [...(d.stocktakes || []), st], nextStNum: nextStNum + 1 };
+            });
+            setModal(null);
+            showToast("Đã tạo phiếu kiểm kê, chốt số liệu hệ thống! 📋");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1187,6 +1355,44 @@ function PriceModal({ product, recipe, onClose, onSave }) {
       </div>
       <Btn primary disabled={price <= 0 || (isSeasonal && salvage < 0)} style={{ width: "100%" }} onClick={() => onSave(price, salvage, isSeasonal)}>
         Lưu ✏️
+      </Btn>
+    </Modal>
+  );
+}
+
+function NewStocktakeModal({ materials, onClose, onSave }) {
+  const [selected, setSelected] = useState(() => new Set(materials.map((m) => m.id)));
+  const allSelected = selected.size === materials.length;
+
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(materials.map((m) => m.id)));
+  const toggle = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <Modal title="Tạo phiếu kiểm kê" onClose={onClose}>
+      <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
+        Chọn nguyên vật liệu cần kiểm kê. Hệ thống sẽ chốt số liệu tồn kho hiện tại ngay khi tạo phiếu.
+      </div>
+      <Btn small onClick={toggleAll} style={{ marginBottom: 10 }}>
+        {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+      </Btn>
+      <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${T.line}`, borderRadius: 10, padding: "6px 10px", marginBottom: 14 }}>
+        {materials.map((m) => (
+          <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", cursor: "pointer" }}>
+            <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggle(m.id)} style={{ width: 15, height: 15, accentColor: T.pink }} />
+            <span style={{ fontSize: 12 }}>{m.emoji} {m.name}</span>
+            <span style={{ fontSize: 10.5, color: T.muted, marginLeft: "auto" }}>{m.qty.toLocaleString("vi-VN")}{m.unit}</span>
+          </label>
+        ))}
+      </div>
+      <Btn primary disabled={selected.size === 0} style={{ width: "100%" }} onClick={() => onSave([...selected])}>
+        Tạo phiếu ({selected.size} NVL) 📋
       </Btn>
     </Modal>
   );
