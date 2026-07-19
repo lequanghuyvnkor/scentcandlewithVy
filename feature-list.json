@@ -13,8 +13,8 @@
       "name": "Danh mục nhà cung cấp + MOQ + quy cách đóng gói",
       "description": "Thêm entity nhà cung cấp (tên, lead time trung bình/min/max/độ lệch riêng theo NCC). Gắn nhà cung cấp mặc định, MOQ (số lượng đặt tối thiểu), và quy cách đóng gói (VD: chai 500ml) vào từng nguyên vật liệu trong recipes.js/seed data. Là điều kiện để hoàn thiện F01 và F09.",
       "dependencies": [],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "frontend/src/data/recipes.js: added SEED.suppliers (5 suppliers: sáp, tinh dầu nội địa, tinh dầu nhập khẩu, bao bì, bấc — each with leadTimeAvg/Min/Max/StdDev) and supplierId/moq/packSize fields on every material. frontend/src/components/AdminApp.jsx Kho tab: each material row now shows '🏷️ {supplier.name} · MOQ x · Đóng gói y/kiện'; also fixed the L (lead time) and sL (lead time std dev) defaults, which previously fell back to a dead `m.id.startsWith('frag')` check (never true, since no material id starts with 'frag') and a hardcoded 0.5 — now correctly default to the material's assigned supplier's leadTimeAvg/leadTimeStdDev when not manually overridden. Verified live in browser: wax-soy shows 'Sáp Việt An · MOQ 10.000g · Đóng gói 5.000g/kiện' with L input defaulting to 2; oil-oud (imported) shows 'Hương Liệu Nhập Khẩu Âu Mỹ · MOQ 2.000ml · Đóng gói 500ml/kiện' with L defaulting to 12; confirmed feat-001's batch/lot UI (Lô 2 ⚠️1 for oil-lotus) still renders correctly alongside the new fields. ./init.sh clean (lint 0 errors, build OK). Note: this feature only lays the data groundwork per its own description — MOQ/packSize are NOT yet used to round suggested purchase quantities (that's feat-007) and there is no supplier CRUD UI (out of scope, not required by description)."
     },
     {
       "id": "feat-003",

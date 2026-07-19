@@ -503,8 +503,10 @@ export function AdminApp({ db, setDb, showToast }) {
           </div>
           {db.materials.map((m, i) => {
             const stats = demandStats[m.id] || { D: 0, sigma_D: 0 };
-            const L = m.leadTime || (m.id.startsWith("frag") ? 7 : 2);
-            const sL = m.sL || 0.5;
+            const supplier = (db.suppliers || []).find((s) => s.id === m.supplierId);
+            // Mặc định Lead Time (L) và độ lệch chuẩn (sL) lấy từ NCC mặc định của NVL (F01/F07) khi chưa ghi đè tay.
+            const L = m.leadTime || supplier?.leadTimeAvg || 2;
+            const sL = m.sL || supplier?.leadTimeStdDev || 0.5;
             const pos = inventoryPos[m.id] || { onHand: 0, reserved: 0, available: 0, onOrder: 0 };
             
             const SS = Math.ceil(NORMSINV(csl) * Math.sqrt(L * Math.pow(stats.sigma_D, 2) + Math.pow(stats.D, 2) * Math.pow(sL, 2)));
@@ -543,6 +545,9 @@ export function AdminApp({ db, setDb, showToast }) {
                                   onChange={e => setDb(d => ({ ...d, materials: d.materials.map(x => x.id === m.id ? { ...x, leadTime: parseInt(e.target.value) || 1 } : x) }))}
                                   style={{ width: 36, padding: "2px", fontSize: 10, border: `1px solid ${T.line}`, borderRadius: 4, textAlign: "center", outline: "none" }} /> ngày
                           </label>
+                        </div>
+                        <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>
+                          🏷️ {supplier?.name || "Chưa gán NCC"} · MOQ {m.moq ? `${m.moq.toLocaleString("vi-VN")}${m.unit}` : "—"} · Đóng gói {m.packSize ? `${m.packSize.toLocaleString("vi-VN")}${m.unit}/kiện` : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
