@@ -1,4 +1,5 @@
 import { WAX, FRAGS, RECIPES, BOM } from "../data/recipes";
+import { productSellableQty } from "./productBatches";
 
 export const fmtVND = (n) => Math.round(n).toLocaleString("vi-VN") + "đ";
 export const rgbStr = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -45,11 +46,11 @@ export function productsNeededForItems(items) {
   return need;
 }
 
-export function checkStockForItems(items, materials, products) {
+export function checkStockForItems(items, materials, products, productBatches) {
   const matNeed = materialsNeededForItems(items);
   const prodNeed = productsNeededForItems(items);
   const missing = [];
-  
+
   for (const [mid, q] of Object.entries(matNeed)) {
     const m = materials.find(x=>x.id===mid);
     if (!m || m.qty < q) missing.push({ name: m?.name ?? mid, need: q, have: m?.qty ?? 0, unit: m?.unit ?? "" });
@@ -57,9 +58,11 @@ export function checkStockForItems(items, materials, products) {
   for (const [pid, q] of Object.entries(prodNeed)) {
     const p = products.find(x=>x.id===pid);
     const r = RECIPES[pid];
-    if (!p || p.qty < q) missing.push({ name: r?.name ?? pid, need: q, have: p?.qty ?? 0, unit: "cây" });
+    // F12: đơn hàng bán chỉ được trừ từ lượng "sẵn sàng bán", không phải tổng tồn kho thô.
+    const sellable = productBatches ? productSellableQty(productBatches, pid) : (p?.qty ?? 0);
+    if (!p || sellable < q) missing.push({ name: r?.name ?? pid, need: q, have: sellable, unit: "cây" });
   }
-  
+
   return missing;
 }
 
@@ -88,6 +91,26 @@ export function NORMSINV(p) {
 export function gaussianPDF(x, mean, std) {
   if (std === 0) return x === mean ? 1 : 0;
   return (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2));
+}
+
+// Giá thanh lý 3 cấp (F15): cấp 1 = product.salvage riêng SKU, cấp 2 = % giá vốn theo dòng sản phẩm,
+// cấp 3 = % giá vốn mặc định hệ thống khi 2 cấp trên đều chưa cấu hình.
+export function resolveGrossSalvage(product, lineId, salvageConfig) {
+  if (product.salvage != null) return product.salvage;
+  const linePct = salvageConfig?.byLine?.[lineId];
+  if (linePct != null) return Math.round(product.cost * linePct);
+  return Math.round(product.cost * (salvageConfig?.systemPct ?? 0.5));
+}
+
+// NetSalvageValue = ClearanceRevenue - SalesFees - RepackagingCost - DisposalCost — dùng làm V trong Newsvendor.
+export function computeNetSalvage(product, lineId, salvageConfig) {
+  const grossSalvage = resolveGrossSalvage(product, lineId, salvageConfig);
+  const feesPct = product.salvageFeesPct ?? salvageConfig?.defaultFeesPct ?? 0;
+  const salesFees = Math.round(grossSalvage * feesPct);
+  const repackagingCost = product.repackagingCost ?? 0;
+  const disposalCost = product.disposalCost ?? 0;
+  const net = Math.max(0, grossSalvage - salesFees - repackagingCost - disposalCost);
+  return { grossSalvage, salesFees, repackagingCost, disposalCost, net };
 }
 
 // Làm tròn số lượng đề xuất nhập lên theo MOQ và quy cách đóng gói (F09) — ví dụ trong kế hoạch:

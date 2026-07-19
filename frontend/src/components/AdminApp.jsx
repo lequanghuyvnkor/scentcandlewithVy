@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { T } from "../data/theme";
-import { RECIPES, BOM, LINES, STATUSES_DEF, WAX } from "../data/recipes";
+import { RECIPES, BOM, LINES, STATUSES_DEF, WAX, SALVAGE_DEFAULTS } from "../data/recipes";
 import { Card, Btn, Input, Badge, Modal } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
-import { fmtVND, orderTotal, itemDisplay, materialsNeededForItems, productsNeededForItems, checkStockForItems, calculateDemandStats, roundOrderQty, NORMSINV, gaussianPDF } from "../utils/formatters";
+import { fmtVND, orderTotal, itemDisplay, materialsNeededForItems, productsNeededForItems, checkStockForItems, calculateDemandStats, roundOrderQty, computeNetSalvage, NORMSINV, gaussianPDF } from "../utils/formatters";
 import { consumeManyBatches, consumeMaterialBatches, syncMaterialQtyFromBatches, sortForConsumption, batchStatus } from "../utils/batches";
+import { PRODUCT_BATCH_STATUSES, consumeAvailableProductBatches, syncProductQtyFromBatches, productSellableQty, productStatusBreakdown } from "../utils/productBatches";
 
 const STATUS_COLORS = {
   new: { color: T.blue, deep: T.blueDeep },
@@ -67,6 +68,7 @@ export function AdminApp({ db, setDb, showToast }) {
   const [optSalvage, setOptSalvage] = useState(30);
   const [expandedMat, setExpandedMat] = useState(null);
   const [expandedST, setExpandedST] = useState(null);
+  const [expandedProd, setExpandedProd] = useState(null);
   const [txRoleFilter, setTxRoleFilter] = useState("all");
   const demandStats = calculateDemandStats(db.orders);
 
@@ -127,11 +129,12 @@ export function AdminApp({ db, setDb, showToast }) {
       if (!order) return d;
       let materials = d.materials, products = d.products, transactions = [...(d.transactions || [])], nextTxNum = d.nextTxNum || 1;
       let batches = d.batches || [], nextBatchNum = d.nextBatchNum || 1;
+      let pBatches = d.productBatches || [], nextPBatchNum = d.nextPBatchNum || 1;
       let deducted = order.deducted;
       const actorRole = d.currentRole || "quanly";
 
       if (newStatus === "producing" && !order.deducted) {
-        const missing = checkStockForItems(order.items, d.materials, d.products);
+        const missing = checkStockForItems(order.items, d.materials, d.products, d.productBatches);
         if (missing.length) {
           showToast(`Thiếu tồn kho: ${missing.map((m) => `${m.name} (cần ${m.need}${m.unit}, còn ${m.have}${m.unit})`).join(", ")} 🥺`, false);
           return d;
@@ -148,13 +151,15 @@ export function AdminApp({ db, setDb, showToast }) {
             transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "production_consume", actorRole, refDoc: orderId, batchId: c.batchId, itemId: mid, qty: -c.qty, reason: `Xuất sản xuất custom ĐH ${orderId}`, date: new Date().toISOString() });
           }
         }
-        products = d.products.map((p) => {
-          if (prodNeed[p.id]) {
-            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "sales_issue", actorRole, refDoc: orderId, itemId: p.id, qty: -prodNeed[p.id], reason: `Xuất kho thành phẩm ĐH ${orderId}`, date: new Date().toISOString() });
-            return { ...p, qty: p.qty - prodNeed[p.id] };
+        // F12: xuất thành phẩm chỉ được trừ từ lô "sẵn sàng bán".
+        for (const pid of Object.keys(prodNeed)) {
+          const consumedP = consumeAvailableProductBatches(pBatches, pid, prodNeed[pid]);
+          pBatches = consumedP.batches;
+          for (const c of consumedP.consumedFrom) {
+            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "sales_issue", actorRole, refDoc: orderId, batchId: c.batchId, itemId: pid, qty: -c.qty, reason: `Xuất kho thành phẩm ĐH ${orderId}`, date: new Date().toISOString() });
           }
-          return p;
-        });
+        }
+        products = syncProductQtyFromBatches(d.products, pBatches);
         deducted = true;
         showToast(`Đã xuất kho cho ${orderId} — bắt đầu đóng gói! 📦`);
       }
@@ -173,23 +178,28 @@ export function AdminApp({ db, setDb, showToast }) {
           transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "material_return", actorRole, refDoc: orderId, batchId: retBatch.id, itemId: mid, qty: q, reason: `Hoàn kho custom ĐH ${orderId}`, date: new Date().toISOString() });
         }
         materials = syncMaterialQtyFromBatches(d.materials, batches);
-        products = d.products.map((p) => {
-          if (prodNeed[p.id]) {
-            transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "reversal", actorRole, refDoc: orderId, itemId: p.id, qty: prodNeed[p.id], reason: `Hoàn kho ĐH ${orderId}`, date: new Date().toISOString() });
-            return { ...p, qty: p.qty + prodNeed[p.id] };
-          }
-          return p;
-        });
+        // Cùng giới hạn như NVL: không truy ngược đúng lô thành phẩm đã xuất, tạo lô mới "available" thay thế.
+        for (const [pid, q] of Object.entries(prodNeed)) {
+          const retPBatch = { id: `RETP-${nextPBatchNum++}`, productId: pid, receivedDate: today, expiryDate: null, initialQty: q, remainingQty: q, status: "available" };
+          pBatches = [...pBatches, retPBatch];
+          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "reversal", actorRole, refDoc: orderId, batchId: retPBatch.id, itemId: pid, qty: q, reason: `Hoàn kho ĐH ${orderId}`, date: new Date().toISOString() });
+        }
+        products = syncProductQtyFromBatches(d.products, pBatches);
         deducted = false;
         showToast(`Đã hoàn kho cho ${orderId} 🔄`);
       }
-      return { ...d, materials, products, transactions, nextTxNum, batches, nextBatchNum, orders: d.orders.map((o) => (o.id === orderId ? { ...o, status: newStatus, deducted } : o)) };
+      return { ...d, materials, products, transactions, nextTxNum, batches, nextBatchNum, productBatches: pBatches, nextPBatchNum, orders: d.orders.map((o) => (o.id === orderId ? { ...o, status: newStatus, deducted } : o)) };
     });
   };
 
   const inventoryPos = {};
   db.materials.forEach(m => { inventoryPos[m.id] = { onHand: m.qty, reserved: 0, available: m.qty, onOrder: 0, position: m.qty }; });
-  db.products.forEach(p => { inventoryPos[p.id] = { onHand: p.qty, reserved: 0, available: p.qty, onOrder: 0, position: p.qty }; });
+  db.products.forEach(p => {
+    // F12: "available" của thành phẩm là lượng SẴN SÀNG BÁN (lô trạng thái "available"), không phải tổng tồn thô —
+    // onHand vẫn giữ tổng thật (gồm cả lô chờ QC/lỗi/mẫu) để hiển thị đầy đủ.
+    const sellable = productSellableQty(db.productBatches || [], p.id);
+    inventoryPos[p.id] = { onHand: p.qty, reserved: 0, available: sellable, onOrder: 0, position: sellable };
+  });
 
   db.orders.forEach(o => {
     if (["new", "confirmed"].includes(o.status) && !o.deducted) {
@@ -502,6 +512,18 @@ export function AdminApp({ db, setDb, showToast }) {
 
       {tab === "products" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <Card>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Giá thanh lý mặc định (F15) ⚙️</div>
+              <Btn small onClick={() => setModal({ type: "salvageConfig" })}>Chỉnh mặc định</Btn>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted }}>
+              Cấp hệ thống: <b style={{ color: T.text }}>{Math.round((db.salvageConfig?.systemPct ?? SALVAGE_DEFAULTS.systemPct) * 100)}%</b> giá vốn
+              {" · "}
+              {LINES.map((l) => `${l.emoji} ${Math.round((db.salvageConfig?.byLine?.[l.id] ?? SALVAGE_DEFAULTS.byLine[l.id]) * 100)}%`).join(" · ")}
+              {" · "}Phí bán mặc định <b style={{ color: T.text }}>{Math.round((db.salvageConfig?.defaultFeesPct ?? SALVAGE_DEFAULTS.defaultFeesPct) * 100)}%</b>
+            </div>
+          </Card>
           {LINES.map((line) => (
             <div key={line.id}>
               <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>
@@ -521,10 +543,15 @@ export function AdminApp({ db, setDb, showToast }) {
                       return n;
                     })();
                     
-                    const actualSalvage = p.salvage ?? Math.round(p.cost * 0.5);
+                    const netSalvage = computeNetSalvage(p, r.line, db.salvageConfig || SALVAGE_DEFAULTS);
                     const Cu = Math.max(0, p.price - p.cost);
-                    const Co = Math.max(0, p.cost - actualSalvage);
+                    const Co = Math.max(0, p.cost - netSalvage.net);
                     const optCSL = (Cu + Co) > 0 ? (Cu / (Cu + Co)) : 0;
+
+                    const pBatchesForP = (db.productBatches || []).filter((b) => b.productId === p.id && b.remainingQty > 0);
+                    const statusBreakdown = productStatusBreakdown(db.productBatches || [], p.id);
+                    const pAlertCount = pBatchesForP.filter((b) => ["soon", "expired"].includes(batchStatus(b.expiryDate).level)).length;
+                    const isExpandedProd = expandedProd === p.id;
 
                     return (
                       <Card key={p.id}>
@@ -572,9 +599,45 @@ export function AdminApp({ db, setDb, showToast }) {
                             );
                           })()}
                         </div>
-                        <Btn small onClick={() => setModal({ type: "editPrice", data: p.id })} style={{ width: "100%" }}>
-                          ✏️ Sửa giá
-                        </Btn>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <Btn small onClick={() => setModal({ type: "editPrice", data: p.id })} style={{ flex: 1 }}>
+                            ✏️ Sửa giá
+                          </Btn>
+                          <Btn small onClick={() => setExpandedProd(isExpandedProd ? null : p.id)} style={pAlertCount > 0 ? { background: "#FBE3DA", color: T.redDeep } : {}}>
+                            📦 {pBatchesForP.length}{pAlertCount > 0 ? ` ⚠️${pAlertCount}` : ""}
+                          </Btn>
+                        </div>
+                        {isExpandedProd && (
+                          <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 12px", border: `1px dashed ${T.line}` }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6 }}>Trạng thái tồn kho (F12)</div>
+                            {PRODUCT_BATCH_STATUSES.map((s) => (
+                              <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, padding: "2px 0" }}>
+                                <span>{s.emoji} {s.label}</span>
+                                <b>{(statusBreakdown[s.id] || 0).toLocaleString("vi-VN")} cây</b>
+                              </div>
+                            ))}
+                            {pBatchesForP.length > 0 && <div style={{ height: 1, background: T.line, margin: "6px 0" }} />}
+                            {pBatchesForP.map((b) => {
+                              const est = batchStatus(b.expiryDate);
+                              return (
+                                <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 10 }}>
+                                  <span style={{ fontWeight: 700, minWidth: 60 }}>{b.id}</span>
+                                  <span style={{ color: T.muted, flex: 1 }}>{b.remainingQty.toLocaleString("vi-VN")} cây{est.level !== "none" ? ` · ${est.label}` : ""}</span>
+                                  <select
+                                    value={b.status}
+                                    onChange={(e) => setDb((d) => ({ ...d, productBatches: d.productBatches.map((x) => (x.id === b.id ? { ...x, status: e.target.value } : x)) }))}
+                                    style={{ fontSize: 9.5, padding: "2px 4px", borderRadius: 6, border: `1px solid ${T.line}`, outline: "none", fontFamily: "inherit" }}
+                                  >
+                                    {PRODUCT_BATCH_STATUSES.map((s) => (
+                                      <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })}
+                            {pBatchesForP.length === 0 && <div style={{ fontSize: 10.5, color: T.muted }}>Chưa có lô nào</div>}
+                          </div>
+                        )}
                       </Card>
                     );
                   })}
@@ -619,10 +682,16 @@ export function AdminApp({ db, setDb, showToast }) {
                       setDb(d => {
                         let txs = [...(d.transactions || [])];
                         let nextTx = d.nextTxNum || 1;
-                        let prods = d.products.map(p => p.id === po.productId ? { ...p, qty: p.qty + po.qty } : p);
                         const actorRole = d.currentRole || "quanly";
+                        const today = new Date().toISOString().slice(0, 10);
 
-                        txs.push({ id: `TX-${nextTx++}`, type: "IN", txType: "production_yield", actorRole, refDoc: po.id, itemId: po.productId, qty: po.qty, reason: `Nhập thành phẩm ${po.id}`, date: new Date().toISOString() });
+                        // F12: thành phẩm mới ra lò lập một lô "sẵn sàng bán" riêng, không cộng thẳng vào qty.
+                        const nextPBatchNum = d.nextPBatchNum || 1;
+                        const newPBatch = { id: `PB-${nextPBatchNum}`, productId: po.productId, receivedDate: today, expiryDate: null, initialQty: po.qty, remainingQty: po.qty, status: "available" };
+                        const pBatches = [...(d.productBatches || []), newPBatch];
+                        const prods = syncProductQtyFromBatches(d.products, pBatches);
+
+                        txs.push({ id: `TX-${nextTx++}`, type: "IN", txType: "production_yield", actorRole, refDoc: po.id, batchId: newPBatch.id, itemId: po.productId, qty: po.qty, reason: `Nhập thành phẩm ${po.id}`, date: new Date().toISOString() });
 
                         const matNeed = {};
                         for (const [mid, per] of BOM[po.productId] || []) matNeed[mid] = (matNeed[mid] || 0) + per * po.qty;
@@ -638,6 +707,7 @@ export function AdminApp({ db, setDb, showToast }) {
 
                         return {
                           ...d, transactions: txs, nextTxNum: nextTx, materials: mats, products: prods, batches: consumed.batches,
+                          productBatches: pBatches, nextPBatchNum: nextPBatchNum + 1,
                           productionOrders: d.productionOrders.map(x => x.id === po.id ? { ...x, status: "done" } : x)
                         };
                       });
@@ -1273,11 +1343,23 @@ export function AdminApp({ db, setDb, showToast }) {
         <PriceModal
           product={db.products.find((p) => p.id === modal.data)}
           recipe={RECIPES[modal.data]}
+          salvageConfig={db.salvageConfig || SALVAGE_DEFAULTS}
           onClose={() => setModal(null)}
-          onSave={(price, salvage, isSeasonal) => {
-            setDb((d) => ({ ...d, products: d.products.map((p) => (p.id === modal.data ? { ...p, price, salvage, isSeasonal } : p)) }));
+          onSave={(price, isSeasonal, salvageFields) => {
+            setDb((d) => ({ ...d, products: d.products.map((p) => (p.id === modal.data ? { ...p, price, isSeasonal, ...salvageFields } : p)) }));
             setModal(null);
             showToast("Đã cập nhật cấu hình sản phẩm ✏️");
+          }}
+        />
+      )}
+      {modal?.type === "salvageConfig" && (
+        <SalvageConfigModal
+          config={db.salvageConfig || SALVAGE_DEFAULTS}
+          onClose={() => setModal(null)}
+          onSave={(config) => {
+            setDb((d) => ({ ...d, salvageConfig: config }));
+            setModal(null);
+            showToast("Đã cập nhật giá thanh lý mặc định! ⚙️");
           }}
         />
       )}
@@ -1358,19 +1440,24 @@ export function AdminApp({ db, setDb, showToast }) {
             onClose={() => setModal(null)}
             onSave={(qtys) => {
               setDb((d) => {
-                let products = d.products;
                 const transactions = [...(d.transactions || [])];
                 let nextTxNum = d.nextTxNum || 1;
+                let pBatches = d.productBatches || [];
+                let nextPBatchNum = d.nextPBatchNum || 1;
                 const actorRole = d.currentRole || "quanly";
+                const today = new Date().toISOString().slice(0, 10);
+                // F12: hàng khách trả vào trạng thái "chờ QC" — cần kiểm tra trước khi coi là sẵn sàng bán lại.
                 for (const [pid, q] of Object.entries(qtys)) {
                   if (!q) continue;
-                  products = products.map((p) => (p.id === pid ? { ...p, qty: p.qty + q } : p));
-                  transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "customer_return", actorRole, refDoc: order.id, itemId: pid, qty: q, reason: `Khách trả hàng ĐH ${order.id}`, date: new Date().toISOString() });
+                  const retBatch = { id: `RETP-${nextPBatchNum++}`, productId: pid, receivedDate: today, expiryDate: null, initialQty: q, remainingQty: q, status: "qc_hold" };
+                  pBatches = [...pBatches, retBatch];
+                  transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "customer_return", actorRole, refDoc: order.id, batchId: retBatch.id, itemId: pid, qty: q, reason: `Khách trả hàng ĐH ${order.id}`, date: new Date().toISOString() });
                 }
-                return { ...d, products, transactions, nextTxNum };
+                const products = syncProductQtyFromBatches(d.products, pBatches);
+                return { ...d, products, productBatches: pBatches, nextPBatchNum, transactions, nextTxNum };
               });
               setModal(null);
-              showToast("Đã ghi nhận khách trả hàng! ↩️");
+              showToast("Đã ghi nhận khách trả hàng (chờ kiểm tra chất lượng)! ↩️");
             }}
           />
         );
@@ -1503,16 +1590,29 @@ function ReceivePOModal({ po, material, onClose, onSave }) {
   );
 }
 
-function PriceModal({ product, recipe, onClose, onSave }) {
+function PriceModal({ product, recipe, salvageConfig, onClose, onSave }) {
   const [price, setPrice] = useState(product?.price ?? 0);
-  const [salvage, setSalvage] = useState(product?.salvage ?? Math.round((product?.cost ?? 0) * 0.5));
   const [isSeasonal, setIsSeasonal] = useState(product?.isSeasonal ?? false);
+  const [salvageOverride, setSalvageOverride] = useState(product?.salvage != null ? String(product.salvage) : "");
+  const [feesPctOverride, setFeesPctOverride] = useState(product?.salvageFeesPct != null ? String(Math.round(product.salvageFeesPct * 100)) : "");
+  const [repackagingCost, setRepackagingCost] = useState(product?.repackagingCost ?? 0);
+  const [disposalCost, setDisposalCost] = useState(product?.disposalCost ?? 0);
   if (!product) return null;
+
   const margin = price > 0 ? Math.round(((price - product.cost) / price) * 100) : 0;
+  const linePct = salvageConfig?.byLine?.[recipe.line];
+  const systemPct = salvageConfig?.systemPct ?? 0.5;
+  const tierGross = linePct != null ? Math.round(product.cost * linePct) : Math.round(product.cost * systemPct);
+  const tierLabel = linePct != null ? `theo dòng — ${Math.round(linePct * 100)}% giá vốn` : `mặc định hệ thống — ${Math.round(systemPct * 100)}% giá vốn`;
+  const grossSalvage = salvageOverride !== "" ? Number(salvageOverride) : tierGross;
+  const feesPct = feesPctOverride !== "" ? Number(feesPctOverride) / 100 : (salvageConfig?.defaultFeesPct ?? 0.05);
+  const salesFees = Math.round(grossSalvage * feesPct);
+  const netSalvage = Math.max(0, grossSalvage - salesFees - (Number(repackagingCost) || 0) - (Number(disposalCost) || 0));
+
   return (
     <Modal title={`Cấu hình — ${recipe.emoji} ${recipe.name}`} onClose={onClose}>
       <Input label="Giá bán (đ)" type="number" value={price} onChange={setPrice} />
-      
+
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, marginTop: 4 }}>
         <input type="checkbox" checked={isSeasonal} onChange={e => setIsSeasonal(e.target.checked)} id="cb-seasonal" style={{ width: 16, height: 16, accentColor: T.pink }} />
         <label htmlFor="cb-seasonal" style={{ fontSize: 13, fontWeight: 700, color: T.text, cursor: "pointer" }}>Sản phẩm Mùa vụ (Dùng thuật toán Newsvendor)</label>
@@ -1521,17 +1621,75 @@ function PriceModal({ product, recipe, onClose, onSave }) {
       {isSeasonal && (
         <>
           <div style={{ fontSize: 11, color: T.muted, marginBottom: 10, background: T.soft, padding: 8, borderRadius: 8 }}>
-            Hàng mùa vụ (VD: Valentine, Giáng Sinh) sẽ bị ế nếu qua mùa. Vui lòng nhập <b>Giá thanh lý</b> để thuật toán tính toán rủi ro tồn kho.
+            Hàng mùa vụ (VD: Valentine, Giáng Sinh) sẽ bị ế nếu qua mùa. Cấu hình <b>Giá thanh lý</b> theo 3 cấp (F15) để thuật toán tính rủi ro tồn kho.
           </div>
-          <Input label="Giá thanh lý (đ) - tính CSL" type="number" value={salvage} onChange={setSalvage} />
+          <Input label={`Giá xả hàng gộp riêng SKU (đ) — để trống dùng ${tierLabel} (${fmtVND(tierGross)})`} type="number" value={salvageOverride} onChange={setSalvageOverride} placeholder={String(tierGross)} />
+          <Input label={`Phí bán khi xả hàng (%) — để trống dùng mặc định ${Math.round((salvageConfig?.defaultFeesPct ?? 0.05) * 100)}%`} type="number" value={feesPctOverride} onChange={setFeesPctOverride} />
+          <Input label="Chi phí đóng gói lại (đ)" type="number" value={repackagingCost} onChange={setRepackagingCost} />
+          <Input label="Chi phí huỷ hàng (đ)" type="number" value={disposalCost} onChange={setDisposalCost} />
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 12, background: T.soft, padding: 8, borderRadius: 8, lineHeight: 1.6 }}>
+            Giá xả {fmtVND(grossSalvage)} − Phí bán {fmtVND(salesFees)} − Đóng gói lại {fmtVND(Number(repackagingCost) || 0)} − Huỷ hàng {fmtVND(Number(disposalCost) || 0)}
+            {" = "}<b style={{ color: T.text }}>Giá trị thu hồi ròng (NetSalvageValue) {fmtVND(netSalvage)}</b>
+          </div>
         </>
       )}
-      
+
       <div style={{ fontSize: 12, color: T.muted, marginBottom: 12 }}>
         Giá vốn {fmtVND(product.cost)} → biên lãi <b style={{ color: margin >= 40 ? T.greenDeep : T.yellowDeep }}>{margin}%</b>
       </div>
-      <Btn primary disabled={price <= 0 || (isSeasonal && salvage < 0)} style={{ width: "100%" }} onClick={() => onSave(price, salvage, isSeasonal)}>
+      <Btn
+        primary
+        disabled={price <= 0}
+        style={{ width: "100%" }}
+        onClick={() =>
+          onSave(price, isSeasonal, {
+            salvage: salvageOverride === "" ? null : Number(salvageOverride),
+            salvageFeesPct: feesPctOverride === "" ? null : Number(feesPctOverride) / 100,
+            repackagingCost: Number(repackagingCost) || 0,
+            disposalCost: Number(disposalCost) || 0,
+          })
+        }
+      >
         Lưu ✏️
+      </Btn>
+    </Modal>
+  );
+}
+
+function SalvageConfigModal({ config, onClose, onSave }) {
+  const [systemPct, setSystemPct] = useState(Math.round((config.systemPct ?? 0.5) * 100));
+  const [defaultFeesPct, setDefaultFeesPct] = useState(Math.round((config.defaultFeesPct ?? 0.05) * 100));
+  const [byLine, setByLine] = useState(() => Object.fromEntries(LINES.map((l) => [l.id, Math.round((config.byLine?.[l.id] ?? 0.5) * 100)])));
+
+  return (
+    <Modal title="Cấu hình giá thanh lý mặc định" onClose={onClose}>
+      <div style={{ fontSize: 11, color: T.muted, marginBottom: 12 }}>
+        Áp dụng cho SKU chưa tự cấu hình giá thanh lý riêng (F15 — cấp 2 &amp; cấp 3).
+      </div>
+      <Input label="Mặc định hệ thống (% giá vốn) — cấp 3" type="number" value={systemPct} onChange={setSystemPct} />
+      <Input label="Phí bán mặc định khi xả hàng (%)" type="number" value={defaultFeesPct} onChange={setDefaultFeesPct} />
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, margin: "10px 0 6px" }}>Mặc định theo dòng sản phẩm (% giá vốn) — cấp 2</div>
+      {LINES.map((l) => (
+        <Input
+          key={l.id}
+          label={`${l.emoji} ${l.name}`}
+          type="number"
+          value={byLine[l.id]}
+          onChange={(v) => setByLine((b) => ({ ...b, [l.id]: v }))}
+        />
+      ))}
+      <Btn
+        primary
+        style={{ width: "100%" }}
+        onClick={() =>
+          onSave({
+            systemPct: systemPct / 100,
+            defaultFeesPct: defaultFeesPct / 100,
+            byLine: Object.fromEntries(LINES.map((l) => [l.id, byLine[l.id] / 100])),
+          })
+        }
+      >
+        Lưu cấu hình ⚙️
       </Btn>
     </Modal>
   );

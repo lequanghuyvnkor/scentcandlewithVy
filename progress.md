@@ -2,11 +2,14 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 22:45
-**Session ID:** feat-005
-**Active Feature:** feat-005 (rescoped) - Vai trò thao tác cho báo cáo/lọc — DONE
+**Last Updated:** 2026-07-19 23:40
+**Session ID:** feat-008
+**Active Feature:** feat-009 + feat-008 — DONE, feat-010 tiếp theo (user yêu cầu "tiếp tục, hoàn thiện cho tôi")
 
-**Toàn bộ 10 feature trong feature-list.json đã hoàn thành (feat-001 → feat-010 chưa — còn feat-008, feat-009, feat-010).** Đã làm xong: feat-001, feat-002, feat-003, feat-004, feat-007, feat-006, feat-005 (7/10). Còn lại: feat-008 (trạng thái tồn thành phẩm chi tiết), feat-009 (giá thanh lý 3 cấp), feat-010 (báo cáo quản trị) — chưa được yêu cầu làm, chờ chỉ đạo tiếp theo.
+**9/10 feature đã xong**: feat-001,002,003,004,007,006,005,009,008. Còn **feat-010** (báo cáo quản trị) đang làm.
+
+- **feat-009 (Giá thanh lý 3 cấp)**: `SALVAGE_DEFAULTS` (recipes.js) + `db.salvageConfig` chỉnh được qua `SalvageConfigModal`. `resolveGrossSalvage`/`computeNetSalvage` (formatters.js) thay thế công thức `salvage ?? cost*0.5` cũ. `PriceModal` giờ có input override salvage/phí bán/đóng gói lại/huỷ hàng (để trống = kế thừa cấp 2/3) + dòng breakdown NetSalvageValue. Verify: khớp chính xác ví dụ trong kế hoạch gốc (70.000 - 5.000 - 5.000 = 60.000).
+- **feat-008 (Trạng thái tồn thành phẩm chi tiết)**: `frontend/src/utils/productBatches.js` mới (song song batches.js nhưng cho thành phẩm, có trạng thái available/qc_hold/defective/sample). `inventoryPos.available` cho products giờ = tổng lô "available" (không phải tổng thô). `checkStockForItems` nhận thêm `productBatches` để chỉ kiểm tra lượng sẵn sàng bán. Mọi điểm thay đổi qty thành phẩm (lệnh sản xuất hoàn thành, xuất/hoàn đơn custom, khách trả hàng) đều đi qua lô thay vì cộng/trừ thẳng — khách trả hàng giờ vào lô "chờ QC", KHÔNG tự động cộng vào tồn sẵn bán. Products tab có panel "📦 N" xem breakdown theo trạng thái + đổi trạng thái từng lô qua dropdown. Verify: sản xuất 10 cây → sẵn sàng bán 10; chuyển sang "mẫu" → sẵn sàng bán về 0; khách trả 1 → tạo lô riêng "chờ QC" 1, sẵn sàng bán vẫn giữ nguyên 10 (không cộng nhầm).
 
 **QUAN TRỌNG — bối cảnh doanh nghiệp (user cung cấp 2026-07-19):** Đây là doanh nghiệp 1 người — chủ vừa quản lý vừa trực tiếp sản xuất, không có nhân viên riêng biệt. User yêu cầu: giữ nguyên toàn bộ tính năng quản lý hiện có (không bỏ bớt), nhưng feat-005 (phân quyền) KHÔNG nên xây dựng theo hướng chặn/giới hạn quyền giữa các vai trò (vì chỉ có 1 người thật). Đã thống nhất hướng đi: feat-005 sẽ là "gắn nhãn vai trò đang thao tác" (Kho/Sản xuất/Quản lý/Chủ shop) vào transaction — dùng để LỌC/BÁO CÁO sau này, không dùng để CHẶN thao tác. Ghép chung cơ chế với trường "người thực hiện" của feat-006 cho gọn (cùng là việc gắn nhãn ai/vai trò gì làm hành động, không phải access-control thật).
 

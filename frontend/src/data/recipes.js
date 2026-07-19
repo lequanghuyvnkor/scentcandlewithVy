@@ -60,6 +60,15 @@ export const LINES = [
   { id: "fresh",  name: "Dòng Tươi Mát", emoji: "🌿" },
 ];
 
+// ═══════════════════ GIÁ THANH LÝ 3 CẤP (F15) ═══════════════════
+// Cấp 1 (cao nhất): product.salvage — SKU tự cấu hình. Cấp 2: byLine — % giá vốn mặc định theo dòng sản phẩm.
+// Cấp 3: systemPct — % giá vốn mặc định toàn hệ thống khi SKU và dòng đều chưa cấu hình.
+export const SALVAGE_DEFAULTS = {
+  systemPct: 0.5,
+  defaultFeesPct: 0.05,
+  byLine: { floral: 0.55, fruity: 0.45, woody: 0.5, fresh: 0.5 },
+};
+
 // ═══════════════════ CÔNG THỨC (8 SKU, chia 4 dòng) ═══════════════════
 export const RECIPES = {
   "lotus-dream":  { name: "Lotus Dream", emoji: "🪷", line: "floral", wax: "soybee",  frags: [["Hoa sen", 18], ["Cốm non", 12]],    jarType: "round",   wick: "md" },
@@ -220,5 +229,10 @@ export const SEED = {
   // Vai trò đang thao tác (F17, rescoped cho doanh nghiệp 1 người — xem AdminApp.jsx ROLES) — chỉ để gắn nhãn
   // giao dịch cho báo cáo/lọc sau này, không dùng để chặn quyền vì chỉ có 1 người dùng thật.
   currentRole: "quanly",
-  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3, nextStNum: 2,
+  // F15 — bản sao có thể chỉnh sửa của SALVAGE_DEFAULTS (cấp 2 + cấp 3); cấp 1 nằm trên từng product.salvage.
+  salvageConfig: { ...SALVAGE_DEFAULTS, byLine: { ...SALVAGE_DEFAULTS.byLine } },
+  // F12 — lô thành phẩm theo trạng thái (sẵn sàng bán/chờ QC/lỗi/mẫu). Bắt đầu rỗng vì mọi SKU seed ở qty:0,
+  // chỉ có hàng khi qua lệnh sản xuất hoặc khách trả hàng — khớp đúng với qty:0 hiện tại của products.
+  productBatches: [],
+  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3, nextStNum: 2, nextPBatchNum: 1,
 };
