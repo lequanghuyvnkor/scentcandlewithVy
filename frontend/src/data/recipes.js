@@ -196,5 +196,11 @@ export const SEED = {
     { id: "LOT-29", materialId: "wick-lg",        receivedDate: "2026-06-01", expiryDate: null,         initialQty: 60,    remainingQty: 60,    unitCost: 3000,  qcStatus: "passed" },
     { id: "LOT-30", materialId: "wick-xl",        receivedDate: "2026-06-01", expiryDate: null,         initialQty: 35,    remainingQty: 35,    unitCost: 3600,  qcStatus: "passed" },
   ],
-  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31,
+  // ═══ Đơn mua hàng (F03/F09) — tách "đặt hàng" khỏi "nhận hàng thực tế".
+  // draft → sent → in_transit → received (hoặc cancelled). Chỉ khi "received" mới sinh lô + giao dịch.
+  purchaseOrders: [
+    { id: "PUR-1", materialId: "oil-jasmine", supplierId: "SUP-2", qty: 1000, unitCost: 2.1, status: "in_transit", createdDate: "2026-07-15", expectedDate: "2026-07-21", receivedDate: null },
+    { id: "PUR-2", materialId: "jar-bottle",  supplierId: "SUP-4", qty: 20,   unitCost: 21000, status: "draft", createdDate: "2026-07-18", expectedDate: "2026-07-22", receivedDate: null },
+  ],
+  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3,
 };

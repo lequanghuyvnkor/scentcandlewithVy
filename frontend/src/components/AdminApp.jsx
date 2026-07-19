@@ -16,6 +16,22 @@ const STATUS_COLORS = {
 };
 const STATUSES = STATUSES_DEF.map((s) => ({ ...s, ...STATUS_COLORS[s.id] }));
 
+// Trạng thái đơn mua hàng (F03/F09): nháp → đã gửi NCC → đang về → đã nhận (hoặc huỷ ở 3 trạng thái đầu).
+const PO_STATUSES = [
+  { id: "draft", label: "Nháp", emoji: "📝", color: T.blue, deep: T.blueDeep },
+  { id: "sent", label: "Đã gửi NCC", emoji: "📤", color: T.lilac, deep: T.lilacDeep },
+  { id: "in_transit", label: "Đang về", emoji: "🚚", color: T.yellow, deep: T.yellowDeep },
+  { id: "received", label: "Đã nhận", emoji: "✅", color: T.green, deep: T.greenDeep },
+  { id: "cancelled", label: "Đã huỷ", emoji: "🚫", color: "#F1E9DC", deep: T.muted },
+];
+const PO_NEXT_STATUS = { draft: "sent", sent: "in_transit" };
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + (days || 0));
+  return d.toISOString().slice(0, 10);
+}
+
 export function AdminApp({ db, setDb, showToast }) {
   const [tab, setTab] = useState("dashboard");
   const [modal, setModal] = useState(null);
@@ -92,8 +108,8 @@ export function AdminApp({ db, setDb, showToast }) {
   };
 
   const inventoryPos = {};
-  db.materials.forEach(m => { inventoryPos[m.id] = { onHand: m.qty, reserved: 0, available: m.qty, onOrder: 0 }; });
-  db.products.forEach(p => { inventoryPos[p.id] = { onHand: p.qty, reserved: 0, available: p.qty, onOrder: 0 }; });
+  db.materials.forEach(m => { inventoryPos[m.id] = { onHand: m.qty, reserved: 0, available: m.qty, onOrder: 0, position: m.qty }; });
+  db.products.forEach(p => { inventoryPos[p.id] = { onHand: p.qty, reserved: 0, available: p.qty, onOrder: 0, position: p.qty }; });
 
   db.orders.forEach(o => {
     if (["new", "confirmed"].includes(o.status) && !o.deducted) {
@@ -112,18 +128,30 @@ export function AdminApp({ db, setDb, showToast }) {
     }
   });
 
-  const lowStock = db.materials.filter((m) => inventoryPos[m.id]?.available <= m.min);
+  // Đơn mua đã gửi NCC / đang về (chưa nhận) tính vào "Đang về" — chỉ draft chưa phải cam kết thật (F02/F09).
+  (db.purchaseOrders || []).forEach(po => {
+    if (["sent", "in_transit"].includes(po.status) && inventoryPos[po.materialId]) {
+      inventoryPos[po.materialId].onOrder += po.qty;
+    }
+  });
+  // Inventory Position = OnHand + OnOrder - Reserved (F02) — cơ sở để ra quyết định đặt hàng, không chỉ dựa vào Available.
+  Object.values(inventoryPos).forEach(p => { p.position = p.onHand + p.onOrder - p.reserved; });
+
+  const lowStock = db.materials.filter((m) => inventoryPos[m.id]?.position <= m.min);
   const revenue = db.orders.filter((o) => o.status === "done").reduce((s, o) => s + orderTotal(o, db.products), 0);
   const activeOrders = db.orders.filter((o) => o.status !== "done").length;
   
   const inventoryCapital = db.materials.reduce((sum, m) => sum + (inventoryPos[m.id]?.onHand || 0) * (m.price || 0), 0) +
                            db.products.reduce((sum, p) => sum + (inventoryPos[p.id]?.onHand || 0) * (p.cost || 0), 0);
 
+  const activePOs = (db.purchaseOrders || []).filter((po) => ["draft", "sent", "in_transit"].includes(po.status));
+
   const TABS = [
     { id: "dashboard", emoji: "🏠", label: "Tổng quan" },
     { id: "orders", emoji: "📦", label: "Đơn hàng" },
     { id: "products", emoji: "🕯️", label: "Sản phẩm" },
     { id: "production", emoji: "🏭", label: "Sản xuất" },
+    { id: "purchasing", emoji: "🛒", label: "Mua hàng" },
     { id: "inventory", emoji: "🧺", label: "Kho" },
     { id: "logistics", emoji: "🚚", label: "Logistics" },
     { id: "customers", emoji: "👤", label: "Khách" },
@@ -154,6 +182,9 @@ export function AdminApp({ db, setDb, showToast }) {
             {t.emoji} {tab === t.id && t.label}
             {t.id === "inventory" && lowStock.length > 0 && (
               <span style={{ marginLeft: 5, background: T.red, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{lowStock.length}</span>
+            )}
+            {t.id === "purchasing" && activePOs.length > 0 && (
+              <span style={{ marginLeft: 5, background: T.blueDeep, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{activePOs.length}</span>
             )}
           </button>
         ))}
@@ -489,6 +520,66 @@ export function AdminApp({ db, setDb, showToast }) {
         </Card>
       )}
 
+      {tab === "purchasing" && (
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Đơn mua hàng 🛒</div>
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Nháp → Gửi NCC → Đang về → Nhận hàng. Chỉ khi <b>Nhận hàng</b> mới tạo lô mới và trừ ngân sách vào kho.</div>
+            </div>
+            <Btn primary onClick={() => setModal({ type: "newPO", data: null })}>+ Đơn mua mới</Btn>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(!db.purchaseOrders || db.purchaseOrders.length === 0) && (
+              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có đơn mua hàng nào 📋</div>
+            )}
+            {[...(db.purchaseOrders || [])].reverse().map((po) => {
+              const material = db.materials.find((m) => m.id === po.materialId);
+              const supplier = (db.suppliers || []).find((s) => s.id === po.supplierId);
+              const st = PO_STATUSES.find((s) => s.id === po.status);
+              const nextStatus = PO_NEXT_STATUS[po.status];
+              const nextSt = nextStatus ? PO_STATUSES.find((s) => s.id === nextStatus) : null;
+              const canCancel = ["draft", "sent", "in_transit"].includes(po.status);
+
+              const advance = (newStatus) => {
+                setDb((d) => ({ ...d, purchaseOrders: d.purchaseOrders.map((p) => (p.id === po.id ? { ...p, status: newStatus } : p)) }));
+                showToast(`Đơn ${po.id} chuyển sang "${PO_STATUSES.find((s) => s.id === newStatus)?.label}"`);
+              };
+
+              return (
+                <div key={po.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "#fff", borderRadius: 12, border: `1px solid ${T.line}` }}>
+                  <div style={{ fontSize: 28 }}>{material?.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap", gap: 6 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{po.id} — {material?.name} ×{po.qty.toLocaleString("vi-VN")}{material?.unit}</div>
+                      <Badge color={st?.color} deep={st?.deep}>{st?.emoji} {st?.label}</Badge>
+                    </div>
+                    <div style={{ fontSize: 11, color: T.muted, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                      <span>NCC: <b style={{ color: T.text }}>{supplier?.name ?? "—"}</b></span>
+                      <span>Đặt: {new Date(po.createdDate).toLocaleDateString("vi-VN")}</span>
+                      <span>Dự kiến về: {new Date(po.expectedDate).toLocaleDateString("vi-VN")}</span>
+                      <span>Chi phí dự kiến: {fmtVND(po.qty * po.unitCost)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {nextSt && (
+                      <Btn small primary onClick={() => advance(nextStatus)}>{nextSt.emoji} {nextSt.label}</Btn>
+                    )}
+                    {po.status === "in_transit" && (
+                      <Btn small primary onClick={() => setModal({ type: "receivePO", data: po.id })}>📦 Nhận hàng</Btn>
+                    )}
+                    {canCancel && (
+                      <Btn small danger onClick={() => advance("cancelled")}>Huỷ</Btn>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {tab === "inventory" && (
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
@@ -511,18 +602,19 @@ export function AdminApp({ db, setDb, showToast }) {
             
             const SS = Math.ceil(NORMSINV(csl) * Math.sqrt(L * Math.pow(stats.sigma_D, 2) + Math.pow(stats.D, 2) * Math.pow(sL, 2)));
             const ROP = Math.ceil(stats.D * L + SS);
-            
+
             let statusColor = T.green;
             let statusText = "An toàn 🟢";
             let isLow = false;
-            
-            if (pos.available < SS) { statusColor = T.red; statusText = "Khẩn cấp 🔴"; isLow = true; }
-            else if (pos.available <= ROP) { statusColor = T.yellowDeep; statusText = "Cần đặt 🟡"; isLow = true; }
-            
+
+            // Quyết định dựa trên Inventory Position (onHand + onOrder - reserved), không chỉ Available (nguyên tắc #3).
+            if (pos.position < SS) { statusColor = T.red; statusText = "Khẩn cấp 🔴"; isLow = true; }
+            else if (pos.position <= ROP) { statusColor = T.yellowDeep; statusText = "Cần đặt 🟡"; isLow = true; }
+
             const TargetStock = Math.max(m.min * 2, Math.ceil(ROP + SS + stats.D * 14));
-            const suggest = Math.max(m.min, TargetStock - pos.available);
-            
-            const pct = ROP > 0 ? Math.min((pos.available / (ROP * 2)) * 100, 100) : Math.min((pos.available / (m.min * 4)) * 100, 100);
+            const suggest = Math.max(m.min, TargetStock - pos.position);
+
+            const pct = ROP > 0 ? Math.min((pos.position / (ROP * 2)) * 100, 100) : Math.min((pos.position / (m.min * 4)) * 100, 100);
 
             const matBatches = sortForConsumption((db.batches || []).filter((b) => b.materialId === m.id));
             const activeBatches = matBatches.filter((b) => b.remainingQty > 0);
@@ -555,7 +647,7 @@ export function AdminApp({ db, setDb, showToast }) {
                           Khả dụng: {pos.available.toLocaleString("vi-VN")} <span style={{ fontSize: 11 }}>{m.unit}</span>
                         </div>
                         <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>
-                          Thực tế: {pos.onHand} | Giữ chỗ: {pos.reserved}
+                          Thực tế: {pos.onHand} | Giữ chỗ: {pos.reserved}{pos.onOrder > 0 ? ` | Đang về: ${pos.onOrder}` : ""}
                         </div>
                         <div style={{ fontSize: 10, color: statusColor, fontWeight: 700, marginTop: 3 }}>{statusText} (ROP: {ROP} | SS: {SS})</div>
                       </div>
@@ -565,8 +657,8 @@ export function AdminApp({ db, setDb, showToast }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <Btn small onClick={() => setModal({ type: "restock", data: { id: m.id, suggest, calcDetails: { D: stats.D, sigma: stats.sigma_D, L, SS, ROP, pos, TargetStock } } })}>
-                      + Nhập
+                    <Btn small onClick={() => setModal({ type: "newPO", data: { id: m.id, suggest, calcDetails: { D: stats.D, sigma: stats.sigma_D, L, SS, ROP, pos, TargetStock } } })}>
+                      + Đặt hàng
                     </Btn>
                     <Btn small onClick={() => setExpandedMat(isExpanded ? null : m.id)} style={alertBatchCount > 0 ? { background: "#FBE3DA", color: T.redDeep } : {}}>
                       Lô {activeBatches.length}{alertBatchCount > 0 ? ` ⚠️${alertBatchCount}` : ""}
@@ -842,41 +934,80 @@ export function AdminApp({ db, setDb, showToast }) {
         </div>
       )}
 
-      {modal?.type === "restock" && (
-        <RestockModal
-          material={db.materials.find((m) => m.id === modal.data.id)}
-          suggestedQty={modal.data.suggest}
-          calcDetails={modal.data.calcDetails}
+      {modal?.type === "newPO" && (
+        <NewPurchaseOrderModal
+          materials={db.materials}
+          suppliers={db.suppliers || []}
+          presetMaterialId={modal.data?.id ?? null}
+          suggestedQty={modal.data?.suggest}
+          calcDetails={modal.data?.calcDetails}
           onClose={() => setModal(null)}
-          onSave={(qty, newPrice, expiryDate) => {
+          onSave={(materialId, qty, unitCost) => {
             setDb((d) => {
-              const nextBatchNum = d.nextBatchNum || 1;
-              const batch = {
-                id: `LOT-${nextBatchNum}`,
-                materialId: modal.data.id,
-                receivedDate: new Date().toISOString().slice(0, 10),
-                expiryDate: expiryDate || null,
-                initialQty: qty,
-                remainingQty: qty,
-                unitCost: newPrice,
-                qcStatus: "passed",
+              const material = d.materials.find((m) => m.id === materialId);
+              const supplier = (d.suppliers || []).find((s) => s.id === material?.supplierId);
+              const nextPurNum = d.nextPurNum || 1;
+              const createdDate = new Date().toISOString().slice(0, 10);
+              const po = {
+                id: `PUR-${nextPurNum}`,
+                materialId,
+                supplierId: material?.supplierId ?? null,
+                qty,
+                unitCost,
+                status: "draft",
+                createdDate,
+                expectedDate: addDays(createdDate, supplier?.leadTimeAvg ?? 5),
+                receivedDate: null,
               };
-              const batches = [...(d.batches || []), batch];
-              const tx = { id: `TX-${d.nextTxNum || 1}`, type: "IN", itemId: modal.data.id, qty, reason: "Nhập mua hàng", date: new Date().toISOString(), batchId: batch.id };
-              return {
-                ...d,
-                transactions: [...(d.transactions || []), tx],
-                nextTxNum: (d.nextTxNum || 1) + 1,
-                batches,
-                nextBatchNum: nextBatchNum + 1,
-                materials: syncMaterialQtyFromBatches(d.materials, batches).map((m) => (m.id === modal.data.id ? { ...m, price: newPrice } : m)),
-              };
+              return { ...d, purchaseOrders: [...(d.purchaseOrders || []), po], nextPurNum: nextPurNum + 1 };
             });
             setModal(null);
-            showToast("Đã nhập kho, tạo lô mới và giao dịch! 🧺");
+            showToast("Đã tạo đơn mua hàng! 📝");
           }}
         />
       )}
+      {modal?.type === "receivePO" && (() => {
+        const po = (db.purchaseOrders || []).find((p) => p.id === modal.data);
+        if (!po) return null;
+        const material = db.materials.find((m) => m.id === po.materialId);
+        return (
+          <ReceivePOModal
+            po={po}
+            material={material}
+            onClose={() => setModal(null)}
+            onSave={(qty, expiryDate) => {
+              setDb((d) => {
+                const target = d.purchaseOrders.find((p) => p.id === po.id);
+                if (!target) return d;
+                const nextBatchNum = d.nextBatchNum || 1;
+                const batch = {
+                  id: `LOT-${nextBatchNum}`,
+                  materialId: target.materialId,
+                  receivedDate: new Date().toISOString().slice(0, 10),
+                  expiryDate: expiryDate || null,
+                  initialQty: qty,
+                  remainingQty: qty,
+                  unitCost: target.unitCost,
+                  qcStatus: "passed",
+                };
+                const batches = [...(d.batches || []), batch];
+                const tx = { id: `TX-${d.nextTxNum || 1}`, type: "IN", itemId: target.materialId, qty, reason: `Nhận hàng đơn mua ${target.id}`, date: new Date().toISOString(), batchId: batch.id };
+                return {
+                  ...d,
+                  batches,
+                  nextBatchNum: nextBatchNum + 1,
+                  transactions: [...(d.transactions || []), tx],
+                  nextTxNum: (d.nextTxNum || 1) + 1,
+                  materials: syncMaterialQtyFromBatches(d.materials, batches).map((m) => (m.id === target.materialId ? { ...m, price: target.unitCost } : m)),
+                  purchaseOrders: d.purchaseOrders.map((p) => (p.id === target.id ? { ...p, status: "received", receivedDate: new Date().toISOString().slice(0, 10) } : p)),
+                };
+              });
+              setModal(null);
+              showToast("Đã nhận hàng, tạo lô mới và giao dịch! 📦");
+            }}
+          />
+        );
+      })()}
       {modal?.type === "editPrice" && (
         <PriceModal
           product={db.products.find((p) => p.id === modal.data)}
@@ -946,41 +1077,82 @@ function ProductionModal({ products, materials, onClose, onSave }) {
   );
 }
 
-function RestockModal({ material, suggestedQty, calcDetails, onClose, onSave }) {
-  const [qty, setQty] = useState(suggestedQty ?? 1000);
-  const [price, setPrice] = useState(material?.price ?? 0);
+function NewPurchaseOrderModal({ materials, suppliers, presetMaterialId, suggestedQty, calcDetails, onClose, onSave }) {
+  const [materialId, setMaterialId] = useState(presetMaterialId || materials[0]?.id || "");
+  const isPreset = !!presetMaterialId;
+  const material = materials.find((m) => m.id === materialId);
+  const supplier = suppliers.find((s) => s.id === material?.supplierId);
+  const [qty, setQty] = useState(isPreset ? (suggestedQty ?? 1000) : (material?.min ?? 100));
+  const [unitCost, setUnitCost] = useState(material?.price ?? 0);
+  if (!material) return null;
+
+  const pickMaterial = (id) => {
+    setMaterialId(id);
+    const nm = materials.find((m) => m.id === id);
+    setUnitCost(nm?.price ?? 0);
+    setQty(nm?.min ?? 100);
+  };
+
+  return (
+    <Modal title={isPreset ? `Đặt hàng — ${material.emoji} ${material.name}` : "Tạo đơn mua hàng mới"} onClose={onClose}>
+      {!isPreset && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, marginBottom: 4 }}>Chọn nguyên vật liệu:</div>
+          <select value={materialId} onChange={(e) => pickMaterial(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 13, fontFamily: "inherit" }}>
+            {materials.map((m) => (
+              <option key={m.id} value={m.id}>{m.emoji} {m.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>
+        Nhà cung cấp: <b style={{ color: T.text }}>{supplier?.name ?? "Chưa gán"}</b> · Lead Time TB: <b style={{ color: T.text }}>{supplier?.leadTimeAvg ?? "?"} ngày</b>
+      </div>
+      {calcDetails && (
+        <div style={{ background: T.soft, padding: "12px 14px", borderRadius: 10, marginBottom: 14, color: T.text }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, color: T.blueDeep, display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: 16 }}>🤖</span> AI Khuyến nghị Đặt hàng: {suggestedQty.toLocaleString("vi-VN")} {material.unit}
+          </div>
+          <ul style={{ paddingLeft: 18, margin: 0, display: "flex", flexDirection: "column", gap: 5, fontSize: 11.5 }}>
+            <li>Tốc độ tiêu thụ (D): <b>{calcDetails.D.toFixed(1)}/ngày</b> (độ lệch ±{calcDetails.sigma.toFixed(1)})</li>
+            <li>Lead Time (L): <b>{calcDetails.L} ngày</b></li>
+            <li>Tồn kho an toàn (SS): <b>{calcDetails.SS.toLocaleString("vi-VN")}</b></li>
+            <li>Điểm đặt hàng lại (ROP): <b>{calcDetails.ROP.toLocaleString("vi-VN")}</b> = (D × L) + SS</li>
+            <li>Mức tồn kho mục tiêu (Target Stock): <b>{calcDetails.TargetStock.toLocaleString("vi-VN")}</b></li>
+          </ul>
+          <div style={{ marginTop: 10, fontSize: 11, fontStyle: "italic", opacity: 0.85, lineHeight: 1.4 }}>
+            Vì Inventory Position hiện tại ({calcDetails.pos.position}) đang thấp hơn ROP, hệ thống đề xuất đặt thêm <b>{suggestedQty.toLocaleString("vi-VN")}</b> để lấp đầy lên mức an toàn Target Stock (đủ dùng cho {calcDetails.L + 14} ngày tới).
+          </div>
+        </div>
+      )}
+      <Input label={`Số lượng đặt (${material.unit})`} type="number" value={qty} onChange={setQty} />
+      <Input label="Đơn giá dự kiến (đ)" type="number" value={unitCost} onChange={setUnitCost} />
+      <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
+        Ước tính chi phí: <b style={{ color: T.pinkDeep }}>{fmtVND(Math.round(qty * unitCost))}</b>
+      </div>
+      <Btn primary disabled={qty <= 0 || unitCost < 0} style={{ width: "100%" }} onClick={() => onSave(materialId, qty, unitCost)}>
+        Tạo đơn mua 📝
+      </Btn>
+    </Modal>
+  );
+}
+
+function ReceivePOModal({ po, material, onClose, onSave }) {
+  const [qty, setQty] = useState(po.qty);
   const [expiryDate, setExpiryDate] = useState("");
   if (!material) return null;
   return (
-    <Modal title={`Nhập kho — ${material.emoji} ${material.name}`} onClose={onClose}>
+    <Modal title={`Nhận hàng — ${material.emoji} ${material.name}`} onClose={onClose}>
       <div style={{ fontSize: 12, color: T.muted, marginBottom: 14 }}>
-        Khả dụng hiện tại: <b style={{ color: T.text }}>{calcDetails?.pos?.available || material.qty} {material.unit}</b>
-        {calcDetails && (
-          <div style={{ background: T.soft, padding: "12px 14px", borderRadius: 10, marginTop: 10, color: T.text }}>
-            <div style={{ fontWeight: 700, marginBottom: 6, color: T.blueDeep, display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 16 }}>🤖</span> AI Khuyến nghị Đặt hàng: {suggestedQty.toLocaleString("vi-VN")} {material.unit}
-            </div>
-            <ul style={{ paddingLeft: 18, margin: 0, display: "flex", flexDirection: "column", gap: 5, fontSize: 11.5 }}>
-              <li>Tốc độ tiêu thụ (D): <b>{calcDetails.D.toFixed(1)}/ngày</b> (độ lệch ±{calcDetails.sigma.toFixed(1)})</li>
-              <li>Lead Time (L): <b>{calcDetails.L} ngày</b></li>
-              <li>Tồn kho an toàn (SS): <b>{calcDetails.SS.toLocaleString("vi-VN")}</b></li>
-              <li>Điểm đặt hàng lại (ROP): <b>{calcDetails.ROP.toLocaleString("vi-VN")}</b> = (D × L) + SS</li>
-              <li>Mức tồn kho mục tiêu (Target Stock): <b>{calcDetails.TargetStock.toLocaleString("vi-VN")}</b></li>
-            </ul>
-            <div style={{ marginTop: 10, fontSize: 11, fontStyle: "italic", opacity: 0.85, lineHeight: 1.4 }}>
-              Vì mức khả dụng hiện tại ({calcDetails.pos.available}) đang thấp hơn ROP, hệ thống đề xuất nhập thêm <b>{suggestedQty.toLocaleString("vi-VN")}</b> để lấp đầy lên mức an toàn Target Stock (đủ dùng cho {calcDetails.L + 14} ngày tới).
-            </div>
-          </div>
-        )}
+        Đơn <b style={{ color: T.text }}>{po.id}</b> · đặt {po.qty.toLocaleString("vi-VN")}{material.unit} · dự kiến về {new Date(po.expectedDate).toLocaleDateString("vi-VN")}
       </div>
-      <Input label={`Số lượng nhập (${material.unit})`} type="number" value={qty} onChange={setQty} />
-      <Input label="Đơn giá nhập (đ)" type="number" value={price} onChange={setPrice} />
+      <Input label={`Số lượng thực nhận (${material.unit})`} type="number" value={qty} onChange={setQty} />
       <Input label="Hạn sử dụng lô này (để trống nếu NVL không có hạn dùng)" type="date" value={expiryDate} onChange={setExpiryDate} />
       <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
-        Ước tính chi phí: <b style={{ color: T.pinkDeep }}>{fmtVND(Math.round(qty * price))}</b>
+        Đơn giá đã chốt: <b style={{ color: T.pinkDeep }}>{fmtVND(po.unitCost)}</b> · Tổng: <b style={{ color: T.pinkDeep }}>{fmtVND(Math.round(qty * po.unitCost))}</b>
       </div>
-      <Btn primary disabled={qty <= 0 || price < 0} style={{ width: "100%" }} onClick={() => onSave(qty, price, expiryDate || null)}>
-        Nhập kho 🧺
+      <Btn primary disabled={qty <= 0} style={{ width: "100%" }} onClick={() => onSave(qty, expiryDate || null)}>
+        Xác nhận nhận hàng ✅
       </Btn>
     </Modal>
   );
