@@ -1,0 +1,84 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Lô hàng (Batch/Lot) & xuất kho FEFO/FIFO",
+      "description": "Ứng với F04 trong kế hoạch. Mỗi lần nhập NVL tạo một lô (mã lô, ngày nhập, NCC, số lượng ban đầu/còn lại, đơn giá, ngày sản xuất, hạn sử dụng, trạng thái QC, vị trí lưu trữ). Xuất kho ưu tiên FEFO cho NVL có hạn dùng (tinh dầu, màu), FIFO cho phần còn lại. Đây là lớp dữ liệu nền tảng bắt buộc — kiểm kê (feat-004), trạng thái tồn thành phẩm chi tiết (feat-008) và báo cáo hàng sắp hết hạn (feat-010) đều phụ thuộc vào nó.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "frontend/src/utils/batches.js (FEFO/FIFO consumption + status helpers); db.batches seeded per material in frontend/src/data/recipes.js; wired into AdminApp.jsx moveOrder (deduct/revert), production-order completion, and RestockModal (creates new lot with optional expiry). Kho tab shows per-material lot list with FEFO order + hạn dùng badges. Verified live in browser (npm run dev): (1) oil-lotus seeded with 2 lots (LOT-3 long-shelf received earlier, LOT-4 short-shelf received later) — expanding the lot panel confirmed LOT-4 listed first; (2) completing a 5-unit lotus-dream production order consumed 90ml from LOT-4 only (180->90), leaving LOT-3 untouched at 300, proving FEFO overrides pure FIFO; (3) a second 10-unit order fully drained LOT-4 (180->0) without touching LOT-3, and 'Lô 2' badge correctly dropped to 'Lô 1' once LOT-4 hit zero; (4) restocking wax-soy with an expiry date created a new LOT-2 batch and synced material qty (12000->15000); (5) transaction ledger showed exactly one entry per action, no duplicates. Also fixed a pre-existing mutation bug (transactions.push on the shared d.transactions reference) that caused duplicate ledger rows under React StrictMode's double-invoke — confirmed fixed via repeated restock/production actions producing single ledger rows. ./init.sh clean (lint 0 errors, build OK)."
+    },
+    {
+      "id": "feat-002",
+      "name": "Danh mục nhà cung cấp + MOQ + quy cách đóng gói",
+      "description": "Thêm entity nhà cung cấp (tên, lead time trung bình/min/max/độ lệch riêng theo NCC). Gắn nhà cung cấp mặc định, MOQ (số lượng đặt tối thiểu), và quy cách đóng gói (VD: chai 500ml) vào từng nguyên vật liệu trong recipes.js/seed data. Là điều kiện để hoàn thiện F01 và F09.",
+      "dependencies": [],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-003",
+      "name": "Quy trình đơn mua hàng (PO) tách khỏi nhập kho tức thời",
+      "description": "Ứng với phần F09/'đang về' trong F02. Hiện tại RestockModal cộng thẳng vào tồn kho ngay lập tức, InventoryPosition.onOrder luôn = 0. Cần tách: tạo đơn mua (nháp → đã gửi NCC → đang về → đã nhận) cộng vào 'Đang về' trong Inventory Position; chỉ khi nhận hàng mới tạo giao dịch IN thật và gắn vào một lô mới (feat-001).",
+      "dependencies": ["feat-001", "feat-002"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-004",
+      "name": "Kiểm kê kho (Stocktake)",
+      "description": "Ứng với F16. Quy trình: tạo phiếu kiểm kê → chốt số liệu hệ thống tại thời điểm kiểm kê → nhập số lượng thực tế → tính chênh lệch → yêu cầu giải trình → sinh giao dịch điều chỉnh kho loại 'Điều chỉnh kiểm kê'. Không cho phép sửa tay số tồn kho — mọi chênh lệch phải qua transaction, đúng nguyên tắc #1 của kế hoạch.",
+      "dependencies": ["feat-001"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-005",
+      "name": "Phân quyền vai trò (Kho / Sản xuất / Quản lý / Chủ shop)",
+      "description": "Ứng với F17. Cần quyết định kiến trúc trước khi code: localStorage phía client hiện tại là một-người-dùng, không đủ cho multi-role thật — có thể phải bật backend Express (hiện không được frontend gọi) làm nơi lưu tài khoản/phiên đăng nhập. Ghi quyết định này vào progress.md trước khi implement. Phạm vi tối thiểu: nhân viên kho (nhập/xuất/kiểm kê), nhân viên sản xuất (xem NVL được cấp, ghi nhận tiêu hao/thành phẩm), quản lý (duyệt điều chỉnh/đơn mua, cấu hình ROP/SS), chủ shop (xem toàn bộ + đổi chính sách tối ưu).",
+      "dependencies": ["feat-003", "feat-004"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-006",
+      "name": "Hoàn thiện sổ giao dịch kho (người thực hiện, đủ loại giao dịch, tham chiếu lô/chứng từ)",
+      "description": "Sổ giao dịch hiện tại (transactions[] trong AdminApp.jsx) chỉ có type IN/OUT chung, thiếu 'người thực hiện' và tham chiếu lô/chứng từ. Mở rộng theo F03: thêm đủ các loại giao dịch (khách trả hàng, hàng hỏng, hàng hết hạn, chuyển vị trí kho, hàng dùng thử/tặng khách, hoàn trả NVL) và field actor + batchId + refDoc. Phụ thuộc feat-001 (cần lô để tham chiếu) và feat-003 (cần PO để tham chiếu nhập mua).",
+      "dependencies": ["feat-001", "feat-003"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-007",
+      "name": "Đề xuất nhập hàng làm tròn theo MOQ/quy cách (hoàn thiện F09)",
+      "description": "Công thức suggestedQty hiện tại trong formatters.js/AdminApp.jsx (TargetStock - available) trả về số lẻ, chưa làm tròn lên theo MOQ và quy cách đóng gói như ví dụ trong kế hoạch (đề xuất 1 chai 500ml thay vì 370ml). Cần dùng dữ liệu MOQ/quy cách từ feat-002 để điều chỉnh kết quả trước khi hiển thị trong RestockModal.",
+      "dependencies": ["feat-002"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-008",
+      "name": "Trạng thái tồn kho thành phẩm chi tiết (F12)",
+      "description": "Hiện tại tồn thành phẩm chỉ có onHand/reserved/available chung chung. Tách thành: sẵn sàng bán / giữ cho đơn hàng / chờ QC / hàng lỗi / hàng mẫu / khách trả / sắp hết hạn (dùng dữ liệu lô từ feat-001 cho phần hạn dùng). Đơn hàng bán chỉ được trừ từ 'sẵn sàng bán'.",
+      "dependencies": ["feat-001"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-009",
+      "name": "Giá thanh lý 3 cấp (F15)",
+      "description": "Hiện tại salvage chỉ cấu hình theo từng SKU (PriceModal), mặc định = 50% giá vốn. Thêm cấp giá thanh lý mặc định theo nhóm sản phẩm (LINES trong recipes.js) và giá trị mặc định hệ thống khi SKU chưa cấu hình. Bổ sung công thức NetSalvageValue = ClearanceRevenue - SalesFees - RepackagingCost - DisposalCost thay vì chỉ dùng salvage thô trong tính Newsvendor.",
+      "dependencies": [],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-010",
+      "name": "Báo cáo quản trị cốt lõi (4/12 báo cáo ưu tiên)",
+      "description": "Bắt đầu với 4 báo cáo có giá trị cao nhất trong danh sách 12 báo cáo của kế hoạch: (1) Nhập-xuất-tồn theo kỳ, (2) Hàng sắp hết hạn (dựa trên feat-001), (3) Chênh lệch BOM — định mức vs tiêu hao thực tế (dựa trên transactions của feat-006), (4) Tỷ lệ hết hàng theo SKU. Thêm tab/section báo cáo riêng trong AdminApp.jsx thay vì chỉ để lẻ tẻ trên dashboard.",
+      "dependencies": ["feat-001", "feat-006"],
+      "status": "not-started",
+      "evidence": ""
+    }
+  ]
+}

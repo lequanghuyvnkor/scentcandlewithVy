@@ -558,7 +558,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                 <span style={{ color: T.blueDeep, fontWeight: 700 }}>🔵 Nốt cao (Top):</span> Ấn tượng đầu tiên khi vừa đốt nến bật lên hương <b>{calc.dominantNotes.top || "thanh mát"}</b>. Lan tỏa nhanh, rực rỡ nhưng cũng bay hơi nhanh nhất.
               </div>
               <div style={{ marginBottom: 6 }}>
-                <span style={{ color: T.lilacDeep, fontWeight: 700 }}>🟣 Nốt giữa (Heart):</span> "Linh hồn" của hũ nến mang đậm hương <b>{calc.dominantNotes.mid || "ngọt ngào"}</b>. Tỏa hương sau 10-20 phút và kéo dài trong suốt quá trình đốt.
+                <span style={{ color: T.lilacDeep, fontWeight: 700 }}>🟣 Nốt giữa (Heart):</span> &ldquo;Linh hồn&rdquo; của hũ nến mang đậm hương <b>{calc.dominantNotes.mid || "ngọt ngào"}</b>. Tỏa hương sau 10-20 phút và kéo dài trong suốt quá trình đốt.
               </div>
               <div>
                 <span style={{ color: "#B9862A", fontWeight: 700 }}>🟤 Nốt trầm (Base):</span> Dày dặn và ấm áp từ <b>{calc.dominantNotes.base || "gỗ"}</b>. Lưu lại lâu nhất trong không gian ngay cả khi đã tắt nến.
