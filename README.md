@@ -89,6 +89,7 @@ npm run dev
 ## 📚 Documentation
 
 - [Hướng dẫn sử dụng](./docs/HUONG_DAN_SU_DUNG.md) — Toàn bộ tính năng, từ khách hàng tới quản lý
+- [Hướng dẫn Logistics & Kho vận](./docs/HUONG_DAN_LOGISTICS.md) — Chuyên sâu công thức ROP/Safety Stock/Newsvendor, FEFO, quy trình mua hàng/kiểm kê
 - [API Reference](./docs/API.md) — Tất cả endpoints
 - [Setup Guide](./docs/SETUP.md) — Hướng dẫn cài đặt chi tiết
 - [Architecture](./docs/ARCHITECTURE.md) — Sơ đồ kiến trúc
