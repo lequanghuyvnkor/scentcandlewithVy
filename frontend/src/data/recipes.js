@@ -15,35 +15,32 @@ export const JAR_TYPES = [
 // ═══════════════════ SÁP ═══════════════════
 export const WAX = {
   soy:      { name: "Sáp đậu nành", emoji: "🌱", density: 0.86, burnRate: 7.0, meltPoint: 54, loadMax: 12, hotF: 0.85, coldF: 0.90, base: [252, 246, 228], desc: "Cháy sạch, giữ mùi tốt" },
-  paraffin: { name: "Paraffin",      emoji: "🕯️", density: 0.90, burnRate: 8.5, meltPoint: 58, loadMax: 10, hotF: 0.95, coldF: 0.80, base: [253, 250, 240], desc: "Hot throw mạnh nhất" },
   beeswax:  { name: "Sáp ong",       emoji: "🐝", density: 0.96, burnRate: 5.5, meltPoint: 63, loadMax: 8,  hotF: 0.78, coldF: 0.95, base: [237, 205, 130], desc: "Tự nhiên, cháy lâu" },
-  coconut:  { name: "Sáp dừa",       emoji: "🥥", density: 0.85, burnRate: 7.5, meltPoint: 45, loadMax: 14, hotF: 0.92, coldF: 0.88, base: [253, 249, 238], desc: "Mềm mịn, ôm mùi" },
+  soybee:   { name: "Sáp hỗn hợp (80% Đậu nành)", emoji: "🍯", density: 0.88, burnRate: 6.7, meltPoint: 56, loadMax: 11, hotF: 0.83, coldF: 0.91, base: [249, 238, 208], desc: "An toàn cho mẹ bầu và trẻ nhỏ" },
 };
 
 // ═══════════════════ DẦU THƠM ═══════════════════
 export const FRAGS = [
-  { id: "lavender",   name: "Lavender",   emoji: "💜", family: "Hoa cỏ",    fp: 83, top: 8, mid: 7, base: 4,  dye: [196, 181, 253] },
-  { id: "vanilla",    name: "Vanilla",    emoji: "🍦", family: "Ngọt ngào", fp: 90, top: 3, mid: 6, base: 9,  dye: [242, 214, 160] },
-  { id: "rose",       name: "Hoa hồng",  emoji: "🌹", family: "Hoa cỏ",    fp: 82, top: 7, mid: 9, base: 5,  dye: [238, 168, 180] },
-  { id: "citrus",     name: "Cam chanh", emoji: "🍊", family: "Tươi mát",  fp: 70, top: 9, mid: 5, base: 3,  dye: [248, 190, 110] },
-  { id: "sandalwood", name: "Đàn hương", emoji: "🪵", family: "Gỗ ấm",     fp: 75, top: 4, mid: 7, base: 9,  dye: [196, 156, 108] },
-  { id: "jasmine",    name: "Hoa nhài",  emoji: "🌼", family: "Hoa cỏ",    fp: 85, top: 6, mid: 9, base: 6,  dye: [244, 228, 172] },
-  { id: "mint",       name: "Bạc hà",    emoji: "🌿", family: "Tươi mát",  fp: 79, top: 9, mid: 7, base: 4,  dye: [178, 212, 172] },
-  { id: "oud",        name: "Trầm hương",emoji: "🤎", family: "Gỗ ấm",     fp: 88, top: 3, mid: 5, base: 10, dye: [160, 118, 78] },
-  { id: "peach",      name: "Đào ngọt",  emoji: "🍑", family: "Trái cây",  fp: 78, top: 8, mid: 8, base: 4,  dye: [246, 186, 154] },
-  { id: "berry",      name: "Dâu berry", emoji: "🍓", family: "Trái cây",  fp: 76, top: 8, mid: 7, base: 5,  dye: [222, 128, 138] },
+  { id: "lotus",      name: "Hoa sen",    emoji: "🪷", family: "Hoa cỏ",    fp: 80, top: 6, mid: 9, base: 5,  dye: [245, 200, 215] },
+  { id: "greenrice",  name: "Cốm non",    emoji: "🌾", family: "Hoa cỏ",    fp: 85, top: 8, mid: 7, base: 5,  dye: [180, 220, 150] },
+  { id: "jasmine",    name: "Hoa nhài",   emoji: "🌼", family: "Hoa cỏ",    fp: 85, top: 6, mid: 9, base: 6,  dye: [244, 228, 172] },
+  { id: "rose",       name: "Hoa hồng",   emoji: "🌹", family: "Hoa cỏ",    fp: 82, top: 7, mid: 9, base: 5,  dye: [238, 168, 180] },
+  { id: "orange",     name: "Cam ngọt",   emoji: "🍊", family: "Trái cây",  fp: 72, top: 9, mid: 5, base: 4,  dye: [250, 170, 80] },
+  { id: "pear",       name: "Quả lê",     emoji: "🍐", family: "Trái cây",  fp: 76, top: 8, mid: 7, base: 5,  dye: [200, 230, 160] },
+  { id: "aloe",       name: "Lô hội",     emoji: "🪴", family: "Tươi mát",  fp: 80, top: 8, mid: 6, base: 6,  dye: [160, 210, 170] },
+  { id: "oud",        name: "Trầm hương", emoji: "🤎", family: "Gỗ ấm",     fp: 88, top: 3, mid: 5, base: 10, dye: [160, 118, 78] },
+  { id: "wood",       name: "Gỗ mộc",     emoji: "🪵", family: "Gỗ ấm",     fp: 85, top: 4, mid: 7, base: 9,  dye: [180, 140, 100] },
+  { id: "licorice",   name: "Cam thảo",   emoji: "🪵", family: "Gỗ ấm",     fp: 82, top: 5, mid: 6, base: 8,  dye: [170, 130, 90] },
+  { id: "amaranth",   name: "Bách nhật",  emoji: "🏵️", family: "Gỗ ấm",     fp: 80, top: 6, mid: 7, base: 7,  dye: [210, 150, 180] },
+  { id: "sage",       name: "Xô thơm",    emoji: "🌿", family: "Gỗ ấm",     fp: 78, top: 7, mid: 6, base: 7,  dye: [150, 180, 150] },
 ];
 
-// ═══════════════════ PHẨM MÀU ═══════════════════
-export const DYES = [
-  { id: "none",   name: "Không màu", hex: null },
-  { id: "pink",   name: "Hồng đất",  hex: "#D79E8C" },
-  { id: "peach",  name: "Cam đào",   hex: "#E3A96E" },
-  { id: "butter", name: "Vàng bơ",   hex: "#E8CA7C" },
-  { id: "matcha", name: "Xanh trà",  hex: "#A4B885" },
-  { id: "sky",    name: "Xanh khói", hex: "#9DB4BE" },
-  { id: "lilac",  name: "Tím khói",  hex: "#B6A0BE" },
-  { id: "cocoa",  name: "Nâu cacao", hex: "#8A6949" },
+// ═══════════════════ MÀU LỌ NẾN ═══════════════════
+export const JAR_COLORS = [
+  { id: "clear", name: "Trong suốt", hex: "transparent" },
+  { id: "black", name: "Đen nhám",   hex: "#2C2C2E" },
+  { id: "amber", name: "Hổ phách",   hex: "#B5651D" },
+  { id: "white", name: "Sứ trắng",   hex: "#F5F5F5" },
 ];
 
 // ═══════════════════ BẤC ═══════════════════
@@ -65,26 +62,28 @@ export const LINES = [
 
 // ═══════════════════ CÔNG THỨC (8 SKU, chia 4 dòng) ═══════════════════
 export const RECIPES = {
-  "lavender-dream": { name: "Lavender Dream", emoji: "💜", line: "floral", wax: "soy",     frags: [["Lavender", 19], ["Vanilla", 11]],    jarType: "round",   wick: "md" },
-  "rose-garden":    { name: "Rose Garden",    emoji: "🌹", line: "floral", wax: "soy",     frags: [["Hoa hồng", 16], ["Hoa nhài", 10]],   jarType: "heart",   wick: "sm" },
-  "peach-sunset":   { name: "Peach Sunset",   emoji: "🍑", line: "fruity", wax: "coconut", frags: [["Đào ngọt", 21], ["Cam chanh", 10]],  jarType: "cone",    wick: "sm" },
-  "berry-kiss":     { name: "Berry Kiss",     emoji: "🍓", line: "fruity", wax: "soy",     frags: [["Dâu berry", 10], ["Hoa hồng", 5]],   jarType: "tin",     wick: "xs" },
-  "cozy-woods":     { name: "Cozy Woods",     emoji: "🪵", line: "woody",  wax: "beeswax", frags: [["Đàn hương", 17], ["Trầm hương", 13]],jarType: "mason",   wick: "lg" },
-  "amber-nights":   { name: "Amber Nights",   emoji: "🤎", line: "woody",  wax: "beeswax", frags: [["Trầm hương", 15], ["Vanilla", 10]],  jarType: "bottle",  wick: "md" },
-  "mint-breeze":    { name: "Mint Breeze",    emoji: "🌿", line: "fresh",  wax: "coconut", frags: [["Bạc hà", 18], ["Cam chanh", 9]],     jarType: "hexagon", wick: "md" },
-  "garden-jasmine": { name: "Garden Jasmine", emoji: "🌼", line: "fresh",  wax: "soy",     frags: [["Hoa nhài", 20], ["Bạc hà", 8]],      jarType: "square",  wick: "md" },
+  "lotus-dream":  { name: "Lotus Dream", emoji: "🪷", line: "floral", wax: "soybee",  frags: [["Hoa sen", 18], ["Cốm non", 12]],    jarType: "round",   wick: "md" },
+  "hanoi-autumn": { name: "Hanoi Autumn",emoji: "🍂", line: "woody",  wax: "soybee",  frags: [["Cốm non", 15], ["Gỗ mộc", 10]],     jarType: "round",   wick: "md" },
+  "rose-garden":  { name: "Rose Garden", emoji: "🌹", line: "floral", wax: "soy",     frags: [["Hoa hồng", 16], ["Hoa nhài", 10]],  jarType: "heart",   wick: "sm" },
+  "sweet-pear":   { name: "Sweet Pear",  emoji: "🍐", line: "fruity", wax: "soybee",  frags: [["Quả lê", 20], ["Cam ngọt", 10]],    jarType: "cone",    wick: "sm" },
+  "aloe-breeze":  { name: "Aloe Breeze", emoji: "🪴", line: "fresh",  wax: "soy",     frags: [["Lô hội", 15], ["Hoa nhài", 8]],     jarType: "tin",     wick: "xs" },
+  "cozy-woods":   { name: "Cozy Woods",  emoji: "🪵", line: "woody",  wax: "beeswax", frags: [["Gỗ mộc", 17], ["Trầm hương", 13]],  jarType: "mason",   wick: "lg" },
+  "amber-nights": { name: "Amber Nights",emoji: "🤎", line: "woody",  wax: "soybee",  frags: [["Trầm hương", 15], ["Cam thảo", 10]],jarType: "bottle",  wick: "md" },
+  "sage-garden":  { name: "Sage Garden", emoji: "🌿", line: "fresh",  wax: "soybee",  frags: [["Xô thơm", 18], ["Cam ngọt", 9]],    jarType: "hexagon", wick: "md" },
+  "pure-jasmine": { name: "Pure Jasmine",emoji: "🌼", line: "floral", wax: "soy",     frags: [["Hoa nhài", 20], ["Cốm non", 8]],    jarType: "square",  wick: "md" },
 };
 
 // ═══════════════════ BOM — Bill of Materials mỗi công thức ═══════════════════
 export const BOM = {
-  "lavender-dream": [["wax-soy", 380], ["oil-lavender", 19], ["oil-vanilla", 11], ["jar-round", 1],   ["wick-md", 1], ["dye-lilac", 2]],
-  "rose-garden":    [["wax-soy", 300], ["oil-rose", 16],     ["oil-jasmine", 10], ["jar-heart", 1],   ["wick-sm", 1], ["dye-pink", 2]],
-  "peach-sunset":   [["wax-coconut", 320], ["oil-peach", 21],["oil-citrus", 10],  ["jar-cone", 1],    ["wick-sm", 1], ["dye-peach", 2]],
-  "berry-kiss":     [["wax-soy", 150], ["oil-berry", 10],    ["oil-rose", 5],     ["jar-tin", 1],     ["wick-xs", 1], ["dye-pink", 1]],
-  "cozy-woods":     [["wax-bee", 420], ["oil-sandal", 17],   ["oil-oud", 13],     ["jar-mason", 1],   ["wick-lg", 1], ["dye-cocoa", 2]],
-  "amber-nights":   [["wax-bee", 250], ["oil-oud", 15],      ["oil-vanilla", 10], ["jar-bottle", 1],  ["wick-md", 1], ["dye-cocoa", 2]],
-  "mint-breeze":    [["wax-coconut", 380], ["oil-mint", 18], ["oil-citrus", 9],   ["jar-hexagon", 1], ["wick-md", 1], ["dye-matcha", 2]],
-  "garden-jasmine": [["wax-soy", 350], ["oil-jasmine", 20],  ["oil-mint", 8],     ["jar-square", 1],  ["wick-md", 1], ["dye-butter", 2]],
+  "lotus-dream":  [["wax-soy", 304], ["wax-bee", 76], ["oil-lotus", 18], ["oil-greenrice", 12], ["jar-round", 1],   ["wick-md", 1]],
+  "hanoi-autumn": [["wax-soy", 256], ["wax-bee", 64], ["oil-greenrice", 15], ["oil-wood", 10],  ["jar-round", 1],   ["wick-md", 1]],
+  "rose-garden":  [["wax-soy", 300], ["oil-rose", 16], ["oil-jasmine", 10], ["jar-heart", 1],   ["wick-sm", 1]],
+  "sweet-pear":   [["wax-soy", 256], ["wax-bee", 64], ["oil-pear", 20], ["oil-orange", 10],     ["jar-cone", 1],    ["wick-sm", 1]],
+  "aloe-breeze":  [["wax-soy", 150], ["oil-aloe", 15], ["oil-jasmine", 8], ["jar-tin", 1],      ["wick-xs", 1]],
+  "cozy-woods":   [["wax-bee", 420], ["oil-wood", 17], ["oil-oud", 13], ["jar-mason", 1],       ["wick-lg", 1]],
+  "amber-nights": [["wax-soy", 200], ["wax-bee", 50], ["oil-oud", 15], ["oil-licorice", 10],    ["jar-bottle", 1],  ["wick-md", 1]],
+  "sage-garden":  [["wax-soy", 304], ["wax-bee", 76], ["oil-sage", 18], ["oil-orange", 9],      ["jar-hexagon", 1], ["wick-md", 1]],
+  "pure-jasmine": [["wax-soy", 350], ["oil-jasmine", 20], ["oil-greenrice", 8], ["jar-square", 1], ["wick-md", 1]],
 };
 
 // ═══════════════════ TRẠNG THÁI ĐƠN HÀNG ═══════════════════
@@ -99,29 +98,31 @@ export const STATUSES_DEF = [
 // ═══════════════════ SEED DATA (dữ liệu khởi tạo) ═══════════════════
 export const SEED = {
   products: [
-    { id: "lavender-dream", price: 185000, cost: 62000, active: true },
-    { id: "rose-garden",    price: 210000, cost: 74000, active: true },
-    { id: "peach-sunset",   price: 175000, cost: 58000, active: true },
-    { id: "berry-kiss",     price: 125000, cost: 38000, active: true },
-    { id: "cozy-woods",     price: 235000, cost: 88000, active: true },
-    { id: "amber-nights",   price: 245000, cost: 92000, active: true },
-    { id: "mint-breeze",    price: 165000, cost: 54000, active: true },
-    { id: "garden-jasmine", price: 170000, cost: 56000, active: true },
+    { id: "lotus-dream",  price: 220000, cost: 72000, active: true, qty: 0, isSeasonal: false },
+    { id: "hanoi-autumn", price: 185000, cost: 61000, active: true, qty: 0, isSeasonal: true },
+    { id: "rose-garden",  price: 210000, cost: 74000, active: true, qty: 0, isSeasonal: false },
+    { id: "sweet-pear",   price: 175000, cost: 58000, active: true, qty: 0, isSeasonal: false },
+    { id: "aloe-breeze",  price: 125000, cost: 38000, active: true, qty: 0, isSeasonal: false },
+    { id: "cozy-woods",   price: 235000, cost: 88000, active: true, qty: 0, isSeasonal: true },
+    { id: "amber-nights", price: 245000, cost: 92000, active: true, qty: 0, isSeasonal: false },
+    { id: "sage-garden",  price: 165000, cost: 54000, active: true, qty: 0, isSeasonal: false },
+    { id: "pure-jasmine", price: 170000, cost: 56000, active: true, qty: 0, isSeasonal: false },
   ],
   materials: [
-    { id: "wax-soy",      name: "Sáp đậu nành",  emoji: "🌱", unit: "g",   qty: 12000, min: 3000, price: 0.12 },
-    { id: "wax-coconut",  name: "Sáp dừa",        emoji: "🥥", unit: "g",   qty: 8000,  min: 2000, price: 0.15 },
+    { id: "wax-soy",      name: "Sáp đậu nành",   emoji: "🌱", unit: "g",   qty: 12000, min: 3000, price: 0.12 },
     { id: "wax-bee",      name: "Sáp ong",        emoji: "🐝", unit: "g",   qty: 5000,  min: 1500, price: 0.22 },
-    { id: "oil-lavender", name: "Dầu Lavender",   emoji: "💜", unit: "ml",  qty: 480,   min: 100,  price: 1.8 },
-    { id: "oil-vanilla",  name: "Dầu Vanilla",    emoji: "🍦", unit: "ml",  qty: 350,   min: 100,  price: 1.6 },
-    { id: "oil-rose",     name: "Dầu Hoa hồng",   emoji: "🌹", unit: "ml",  qty: 190,   min: 60,   price: 2.0 },
+    { id: "oil-lotus",    name: "Dầu Hoa sen",    emoji: "🪷", unit: "ml",  qty: 480,   min: 100,  price: 1.8 },
+    { id: "oil-greenrice",name: "Dầu Cốm non",    emoji: "🌾", unit: "ml",  qty: 350,   min: 100,  price: 1.6 },
     { id: "oil-jasmine",  name: "Dầu Hoa nhài",   emoji: "🌼", unit: "ml",  qty: 200,   min: 60,   price: 2.1 },
-    { id: "oil-peach",    name: "Dầu Đào",        emoji: "🍑", unit: "ml",  qty: 260,   min: 80,   price: 1.7 },
-    { id: "oil-citrus",   name: "Dầu Cam chanh",  emoji: "🍊", unit: "ml",  qty: 300,   min: 80,   price: 1.4 },
-    { id: "oil-sandal",   name: "Dầu Đàn hương",  emoji: "🪵", unit: "ml",  qty: 180,   min: 60,   price: 2.4 },
-    { id: "oil-oud",      name: "Dầu Trầm",       emoji: "🤎", unit: "ml",  qty: 120,   min: 50,   price: 3.2 },
-    { id: "oil-berry",    name: "Dầu Dâu berry",  emoji: "🍓", unit: "ml",  qty: 220,   min: 70,   price: 1.5 },
-    { id: "oil-mint",     name: "Dầu Bạc hà",     emoji: "🌿", unit: "ml",  qty: 240,   min: 70,   price: 1.5 },
+    { id: "oil-rose",     name: "Dầu Hoa hồng",   emoji: "🌹", unit: "ml",  qty: 190,   min: 60,   price: 2.0 },
+    { id: "oil-orange",   name: "Dầu Cam ngọt",   emoji: "🍊", unit: "ml",  qty: 300,   min: 80,   price: 1.4 },
+    { id: "oil-pear",     name: "Dầu Quả lê",     emoji: "🍐", unit: "ml",  qty: 260,   min: 80,   price: 1.7 },
+    { id: "oil-aloe",     name: "Dầu Lô hội",     emoji: "🪴", unit: "ml",  qty: 240,   min: 80,   price: 1.6 },
+    { id: "oil-oud",      name: "Dầu Trầm hương", emoji: "🤎", unit: "ml",  qty: 120,   min: 50,   price: 3.2 },
+    { id: "oil-wood",     name: "Dầu Gỗ mộc",     emoji: "🪵", unit: "ml",  qty: 180,   min: 60,   price: 2.4 },
+    { id: "oil-licorice", name: "Dầu Cam thảo",   emoji: "🪵", unit: "ml",  qty: 220,   min: 70,   price: 2.5 },
+    { id: "oil-amaranth", name: "Dầu Bách nhật",  emoji: "🏵️", unit: "ml",  qty: 200,   min: 70,   price: 2.2 },
+    { id: "oil-sage",     name: "Dầu Xô thơm",    emoji: "🌿", unit: "ml",  qty: 240,   min: 70,   price: 1.5 },
     { id: "jar-round",    name: "Lọ tròn cổ điển",emoji: "🫙", unit: "cái", qty: 60,    min: 20,   price: 15000 },
     { id: "jar-square",   name: "Hộp vuông kem",  emoji: "🧊", unit: "cái", qty: 40,    min: 15,   price: 16000 },
     { id: "jar-cone",     name: "Ly nến hình nón",emoji: "🍧", unit: "cái", qty: 35,    min: 15,   price: 13000 },
@@ -137,23 +138,18 @@ export const SEED = {
     { id: "wick-md",      name: "Bấc vừa",        emoji: "🧵", unit: "cái", qty: 150,   min: 40,   price: 2500 },
     { id: "wick-lg",      name: "Bấc lớn",        emoji: "🧵", unit: "cái", qty: 60,    min: 20,   price: 3000 },
     { id: "wick-xl",      name: "Bấc siêu lớn",   emoji: "🧵", unit: "cái", qty: 35,    min: 15,   price: 3600 },
-    { id: "dye-lilac",    name: "Phẩm tím khói",  emoji: "🎨", unit: "g",   qty: 80,    min: 20,   price: 800 },
-    { id: "dye-peach",    name: "Phẩm cam đào",   emoji: "🎨", unit: "g",   qty: 65,    min: 20,   price: 800 },
-    { id: "dye-cocoa",    name: "Phẩm nâu cacao", emoji: "🎨", unit: "g",   qty: 50,    min: 15,   price: 800 },
-    { id: "dye-pink",     name: "Phẩm hồng đất",  emoji: "🎨", unit: "g",   qty: 90,    min: 20,   price: 800 },
-    { id: "dye-matcha",   name: "Phẩm xanh trà",  emoji: "🎨", unit: "g",   qty: 45,    min: 15,   price: 800 },
-    { id: "dye-butter",   name: "Phẩm vàng bơ",   emoji: "🎨", unit: "g",   qty: 55,    min: 15,   price: 800 },
-    { id: "dye-sky",      name: "Phẩm xanh khói", emoji: "🎨", unit: "g",   qty: 40,    min: 15,   price: 800 },
   ],
   customers: [
-    { id: "c1", name: "Chị Mai",  phone: "0901234567", note: "Thích mùi hoa, không thích gỗ", fav: "lavender-dream" },
-    { id: "c2", name: "Anh Tuấn", phone: "0912888123", note: "Mua tặng vợ, sinh nhật 12/8",   fav: "berry-kiss" },
+    { id: "c1", name: "Chị Mai",  phone: "0901234567", note: "Thích mùi hoa, không thích gỗ", fav: "lotus-dream" },
+    { id: "c2", name: "Anh Tuấn", phone: "0912888123", note: "Mua tặng vợ, sinh nhật 12/8",   fav: "rose-garden" },
     { id: "c3", name: "Shop Cỏ May", phone: "0977555999", note: "Đại lý — chiết khấu 15%",    fav: "cozy-woods" },
   ],
   orders: [
-    { id: "DH-001", customerId: "c1", items: [{ type: "catalog", productId: "lavender-dream", qty: 2 }], status: "done", created: "2026-07-10", deducted: true },
-    { id: "DH-002", customerId: "c3", items: [{ type: "catalog", productId: "cozy-woods", qty: 10 }, { type: "catalog", productId: "peach-sunset", qty: 5 }], status: "producing", created: "2026-07-14", deducted: true },
-    { id: "DH-003", customerId: "c2", items: [{ type: "catalog", productId: "berry-kiss", qty: 1 }], status: "confirmed", created: "2026-07-16", deducted: false },
+    { id: "DH-001", customerId: "c1", items: [{ type: "catalog", productId: "lotus-dream", qty: 2 }], status: "done", created: "2026-07-10", deducted: true },
+    { id: "DH-002", customerId: "c3", items: [{ type: "catalog", productId: "cozy-woods", qty: 10 }, { type: "catalog", productId: "sweet-pear", qty: 5 }], status: "producing", created: "2026-07-14", deducted: true },
+    { id: "DH-003", customerId: "c2", items: [{ type: "catalog", productId: "rose-garden", qty: 1 }], status: "confirmed", created: "2026-07-16", deducted: false },
   ],
-  nextOrderNum: 4, nextCustNum: 4,
+  transactions: [],
+  productionOrders: [],
+  nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1,
 };

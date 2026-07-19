@@ -3,12 +3,13 @@ import { T, ADMIN_PASSCODE } from "../data/theme";
 import { Btn, Input, Modal } from "./ui/Primitives";
 
 export function Header({ view, setView, identity, adminAuthed, onOpenLogin, onLogout }) {
-  const NAV = [
-    { id: "home", label: "Trang chủ" },
-    { id: "shop", label: "Cửa hàng" },
-    { id: "sim", label: "Mô phỏng" },
-    ...(adminAuthed ? [{ id: "admin", label: "Quản lý" }] : []),
-  ];
+  const NAV = adminAuthed 
+    ? [{ id: "admin", label: "Quản lý" }]
+    : [
+        { id: "home", label: "Trang chủ" },
+        { id: "shop", label: "Cửa hàng" },
+        { id: "sim", label: "Mô phỏng" }
+      ];
   return (
     <div
       style={{
@@ -22,7 +23,7 @@ export function Header({ view, setView, identity, adminAuthed, onOpenLogin, onLo
         gap: 10,
       }}
     >
-      <div onClick={() => setView("home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+      <div onClick={() => setView(adminAuthed ? "admin" : "home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
         <span style={{ fontSize: 24 }}>🕯️</span>
         <span style={{ fontSize: 17, fontWeight: 700, color: T.pinkDeep }}>Candle Studio</span>
       </div>

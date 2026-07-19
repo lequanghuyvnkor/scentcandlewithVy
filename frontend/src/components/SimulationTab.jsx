@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { T } from "../data/theme";
-import { JAR_TYPES, WAX, FRAGS, DYES, WICKS } from "../data/recipes";
+import { JAR_TYPES, WAX, FRAGS, JAR_COLORS, WICKS } from "../data/recipes";
 import { Card, Btn } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
 import { CheckoutModal } from "./CheckoutModal";
-import { fmtVND, candleColor } from "../utils/formatters";
+import { fmtVND } from "../utils/formatters";
 
 const SIM_STEPS = [
   { emoji: "🫙", label: "Kiểu lọ" },
   { emoji: "🧈", label: "Sáp" },
   { emoji: "🌸", label: "Mùi hương" },
-  { emoji: "🎨", label: "Màu sắc" },
+  { emoji: "🎀", label: "Trang trí lọ" },
   { emoji: "✨", label: "Hoàn thiện" },
 ];
 
@@ -19,10 +19,10 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
   const [step, setStep] = useState(0);
   const [maxReached, setMaxReached] = useState(0);
   const [jarTypeId, setJarTypeId] = useState("round");
-  const [waxType, setWaxType] = useState("soy");
-  const [blend, setBlend] = useState({ lavender: 5, vanilla: 3 });
-  const [dyeId, setDyeId] = useState("pink");
-  const [dyeConc, setDyeConc] = useState(1.5);
+  const [waxType, setWaxType] = useState("soybee");
+  const [blend, setBlend] = useState({ lotus: 5, jasmine: 3 });
+  const [jarColor, setJarColor] = useState("clear");
+  const [engraving, setEngraving] = useState("");
   const [wick, setWick] = useState("md");
   const [lit, setLit] = useState(false);
   const [famFilter, setFam] = useState("Tất cả");
@@ -34,8 +34,8 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
   const jarType = JAR_TYPES.find((j) => j.id === jarTypeId);
   const totalLoad = Object.values(blend).reduce((s, v) => s + v, 0);
-  const wax = WAX[waxType];
-  const rgb = useMemo(() => candleColor(waxType, dyeId, dyeConc, blend), [waxType, dyeId, dyeConc, blend]);
+  const wax = WAX[waxType] || WAX.soybee;
+  const rgb = wax.base;
 
   const calc = useMemo(() => {
     const wickDat = WICKS.find((w) => w.id === wick);
@@ -51,13 +51,19 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     const roomM2 = Math.round(hot * 2.8);
 
     let notes = { top: 0, mid: 0, base: 0 };
+    let dominantNotes = { top: null, mid: null, base: null };
     if (totalLoad > 0) {
+      let maxTop = 0, maxMid = 0, maxBase = 0;
       for (const [id, pct] of Object.entries(blend)) {
         const f = FRAGS.find((x) => x.id === id);
         const w = pct / totalLoad;
         notes.top += f.top * w;
         notes.mid += f.mid * w;
         notes.base += f.base * w;
+        
+        if (f.top * w > maxTop) { maxTop = f.top * w; dominantNotes.top = f.name.toLowerCase(); }
+        if (f.mid * w > maxMid) { maxMid = f.mid * w; dominantNotes.mid = f.name.toLowerCase(); }
+        if (f.base * w > maxBase) { maxBase = f.base * w; dominantNotes.base = f.name.toLowerCase(); }
       }
     }
 
@@ -86,11 +92,11 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     if (burnH < 8) issues.push("Nến cháy khá nhanh với kiểu lọ này");
 
     const bom = [
-      [`wax-${waxType === "beeswax" ? "bee" : waxType}`, Math.round(waxG)],
+      [`wax-${waxType === "soybee" ? "soy" : (waxType === "beeswax" ? "bee" : waxType)}`, Math.round(waxG * (waxType === "soybee" ? 0.8 : 1))],
+      ...(waxType === "soybee" ? [[`wax-bee`, Math.round(waxG * 0.2)]] : []),
       ...Object.entries(blend).map(([id, pct]) => [`oil-${id}`, +((fragG * pct) / totalLoad).toFixed(1)]),
       [`jar-${jarType.id}`, 1],
       [`wick-${wick}`, 1],
-      ...(dyeId !== "none" ? [[`dye-${dyeId}`, Math.max(1, Math.round(dyeConc))]] : []),
     ];
     let cost = 0;
     for (const [mid, qty] of bom) {
@@ -110,8 +116,9 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
       issues,
       bom,
       price,
+      dominantNotes,
     };
-  }, [waxType, blend, totalLoad, jarType, wick, wax, dyeId, dyeConc, db.materials]);
+  }, [waxType, blend, totalLoad, jarType, wick, wax, db.materials]);
 
   const fams = ["Tất cả", ...new Set(FRAGS.map((f) => f.family))];
   const shownFrags = famFilter === "Tất cả" ? FRAGS : FRAGS.filter((f) => f.family === famFilter);
@@ -137,14 +144,18 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     const fragNames = Object.keys(blend)
       .map((id) => FRAGS.find((f) => f.id === id)?.name)
       .join(" + ");
+    const jc = JAR_COLORS.find(c => c.id === jarColor)?.name || "";
+    const itemName = `Nến tự thiết kế (${fragNames})` + (engraving ? ` - Khắc: "${engraving}"` : ``) + ` - Lọ ${jc}`;
     const item = {
       type: "custom",
       id: `sim-${Date.now()}`,
-      name: `Nến tự thiết kế (${fragNames})`,
+      name: itemName,
       emoji: jarType.emoji,
       qty: 1,
       price: calc.price,
       bom: calc.bom,
+      jarColor,
+      engraving,
     };
     const order = {
       id: `DH-${String(db.nextOrderNum).padStart(3, "0")}`,
@@ -366,7 +377,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Btn onClick={() => setStep(1)}>← Quay lại</Btn>
             <Btn primary disabled={totalLoad === 0} onClick={() => setStep(3)}>
-              Xem màu nến 🎨
+              Trang trí lọ 🎀
             </Btn>
           </div>
         </Card>
@@ -374,20 +385,20 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 3 && (
         <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Màu nến của bạn 🎨</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Trang trí lọ nến 🎀</div>
           <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ background: T.soft, borderRadius: 20, padding: "12px 16px", display: "flex", justifyContent: "center" }}>
               <JarCandle jarTypeId={jarTypeId} rgb={rgb} lit={false} size={110} />
             </div>
             <div style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Phẩm màu</div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Màu vỏ lọ</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 12 }}>
-                {DYES.map((d) => {
-                  const active = dyeId === d.id;
+                {JAR_COLORS.map((d) => {
+                  const active = jarColor === d.id;
                   return (
                     <button
                       key={d.id}
-                      onClick={() => setDyeId(d.id)}
+                      onClick={() => setJarColor(d.id)}
                       style={{
                         aspectRatio: "1",
                         borderRadius: 12,
@@ -397,22 +408,37 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                         fontFamily: "inherit",
                         fontSize: 12,
                         transform: active ? "scale(1.08)" : "scale(1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: d.hex === "#2C2C2E" ? "#fff" : "#000"
                       }}
                     >
-                      {!d.hex && "🚫"}
+                      <span style={{ fontSize: 10, fontWeight: 700 }}>{d.name.split(" ")[0]}</span>
                     </button>
                   );
                 })}
               </div>
-              {dyeId !== "none" && (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 4 }}>
-                    <span style={{ color: T.muted }}>Nồng độ</span>
-                    <span style={{ fontWeight: 700 }}>{dyeConc}%</span>
-                  </div>
-                  <input type="range" min={0.2} max={5} step={0.1} value={dyeConc} onChange={(e) => setDyeConc(+e.target.value)} style={{ width: "100%", accentColor: T.pink }} />
-                </div>
-              )}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Khắc chữ (Tùy chọn)</div>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Happy Birthday Vy"
+                  value={engraving}
+                  onChange={(e) => setEngraving(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: 12,
+                    border: `1.5px solid ${T.line}`,
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    background: "#fff",
+                    boxSizing: "border-box"
+                  }}
+                  maxLength={30}
+                />
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
@@ -526,6 +552,18 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                 <Area type="monotone" dataKey="Nốt trầm" stroke="#B9862A" fill="#E9CB86" fillOpacity={0.4} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
+            
+            <div style={{ marginTop: 12, fontSize: 11, color: T.text, lineHeight: 1.6, background: T.soft, padding: "12px", borderRadius: 12, border: `1px solid ${T.line}` }}>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: T.blueDeep, fontWeight: 700 }}>🔵 Nốt cao (Top):</span> Ấn tượng đầu tiên khi vừa đốt nến bật lên hương <b>{calc.dominantNotes.top || "thanh mát"}</b>. Lan tỏa nhanh, rực rỡ nhưng cũng bay hơi nhanh nhất.
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <span style={{ color: T.lilacDeep, fontWeight: 700 }}>🟣 Nốt giữa (Heart):</span> "Linh hồn" của hũ nến mang đậm hương <b>{calc.dominantNotes.mid || "ngọt ngào"}</b>. Tỏa hương sau 10-20 phút và kéo dài trong suốt quá trình đốt.
+              </div>
+              <div>
+                <span style={{ color: "#B9862A", fontWeight: 700 }}>🟤 Nốt trầm (Base):</span> Dày dặn và ấm áp từ <b>{calc.dominantNotes.base || "gỗ"}</b>. Lưu lại lâu nhất trong không gian ngay cả khi đã tắt nến.
+              </div>
+            </div>
           </Card>
 
           {calc.issues.length > 0 && (
@@ -554,7 +592,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Btn onClick={() => setStep(0)}>🔄 Thử lại từ đầu</Btn>
-            <Btn onClick={() => setStep(3)}>← Chỉnh màu lại</Btn>
+            <Btn onClick={() => setStep(3)}>← Trang trí lại</Btn>
           </div>
         </div>
       )}
