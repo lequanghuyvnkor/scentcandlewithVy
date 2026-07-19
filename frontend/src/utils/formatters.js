@@ -90,6 +90,14 @@ export function gaussianPDF(x, mean, std) {
   return (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / std, 2));
 }
 
+// Làm tròn số lượng đề xuất nhập lên theo MOQ và quy cách đóng gói (F09) — ví dụ trong kế hoạch:
+// cần bổ sung 370ml, quy cách chai 500ml → đề xuất 1 chai (500ml), không đề xuất số lẻ.
+export function roundOrderQty(rawNeed, moq = 0, packSize = 1) {
+  const pack = packSize > 0 ? packSize : 1;
+  const minQty = Math.max(rawNeed, moq || 0);
+  return Math.ceil(minQty / pack) * pack;
+}
+
 // Tính Demand (D) và Độ lệch chuẩn (sigma_D) từ lịch sử đơn hàng cho từng nguyên liệu
 export function calculateDemandStats(orders) {
   // Lọc đơn hàng đã giao (done)

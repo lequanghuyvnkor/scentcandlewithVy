@@ -4,7 +4,7 @@ import { T } from "../data/theme";
 import { RECIPES, BOM, LINES, STATUSES_DEF, WAX } from "../data/recipes";
 import { Card, Btn, Input, Badge, Modal } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
-import { fmtVND, orderTotal, itemDisplay, materialsNeededForItems, productsNeededForItems, checkStockForItems, calculateDemandStats, NORMSINV, gaussianPDF } from "../utils/formatters";
+import { fmtVND, orderTotal, itemDisplay, materialsNeededForItems, productsNeededForItems, checkStockForItems, calculateDemandStats, roundOrderQty, NORMSINV, gaussianPDF } from "../utils/formatters";
 import { consumeManyBatches, consumeMaterialBatches, syncMaterialQtyFromBatches, sortForConsumption, batchStatus } from "../utils/batches";
 
 const STATUS_COLORS = {
@@ -761,7 +761,9 @@ export function AdminApp({ db, setDb, showToast }) {
             else if (pos.position <= ROP) { statusColor = T.yellowDeep; statusText = "Cần đặt 🟡"; isLow = true; }
 
             const TargetStock = Math.max(m.min * 2, Math.ceil(ROP + SS + stats.D * 14));
-            const suggest = Math.max(m.min, TargetStock - pos.position);
+            // Làm tròn lên theo MOQ + quy cách đóng gói (F09) — không đề xuất số lẻ như 370ml, mà 1 chai 500ml.
+            const rawNeed = Math.max(0, TargetStock - pos.position);
+            const suggest = roundOrderQty(rawNeed, m.moq, m.packSize);
 
             const pct = ROP > 0 ? Math.min((pos.position / (ROP * 2)) * 100, 100) : Math.min((pos.position / (m.min * 4)) * 100, 100);
 
@@ -806,7 +808,7 @@ export function AdminApp({ db, setDb, showToast }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <Btn small onClick={() => setModal({ type: "newPO", data: { id: m.id, suggest, calcDetails: { D: stats.D, sigma: stats.sigma_D, L, SS, ROP, pos, TargetStock } } })}>
+                    <Btn small onClick={() => setModal({ type: "newPO", data: { id: m.id, suggest, calcDetails: { D: stats.D, sigma: stats.sigma_D, L, SS, ROP, pos, TargetStock, rawNeed, moq: m.moq, packSize: m.packSize } } })}>
                       + Đặt hàng
                     </Btn>
                     <Btn small onClick={() => setExpandedMat(isExpanded ? null : m.id)} style={alertBatchCount > 0 ? { background: "#FBE3DA", color: T.redDeep } : {}}>
@@ -1287,9 +1289,15 @@ function NewPurchaseOrderModal({ materials, suppliers, presetMaterialId, suggest
             <li>Tồn kho an toàn (SS): <b>{calcDetails.SS.toLocaleString("vi-VN")}</b></li>
             <li>Điểm đặt hàng lại (ROP): <b>{calcDetails.ROP.toLocaleString("vi-VN")}</b> = (D × L) + SS</li>
             <li>Mức tồn kho mục tiêu (Target Stock): <b>{calcDetails.TargetStock.toLocaleString("vi-VN")}</b></li>
+            <li>Cần bổ sung (trước làm tròn): <b>{calcDetails.rawNeed.toLocaleString("vi-VN")}</b></li>
+            <li>Quy cách đóng gói: <b>{calcDetails.packSize?.toLocaleString("vi-VN")} {material.unit}/kiện</b> · MOQ: <b>{calcDetails.moq?.toLocaleString("vi-VN")} {material.unit}</b></li>
           </ul>
           <div style={{ marginTop: 10, fontSize: 11, fontStyle: "italic", opacity: 0.85, lineHeight: 1.4 }}>
-            Vì Inventory Position hiện tại ({calcDetails.pos.position}) đang thấp hơn ROP, hệ thống đề xuất đặt thêm <b>{suggestedQty.toLocaleString("vi-VN")}</b> để lấp đầy lên mức an toàn Target Stock (đủ dùng cho {calcDetails.L + 14} ngày tới).
+            {calcDetails.rawNeed > 0 ? (
+              <>Vì Inventory Position hiện tại ({calcDetails.pos.position.toLocaleString("vi-VN")}) đang thấp hơn Target Stock, cần bổ sung {calcDetails.rawNeed.toLocaleString("vi-VN")}{material.unit} — làm tròn lên theo quy cách đóng gói và MOQ, hệ thống đề xuất đặt <b>{suggestedQty.toLocaleString("vi-VN")}</b> (đủ dùng cho {calcDetails.L + 14} ngày tới).</>
+            ) : (
+              <>Inventory Position hiện tại ({calcDetails.pos.position.toLocaleString("vi-VN")}) đã đủ Target Stock, không thực sự cần bổ sung — nhưng nếu đặt hàng, quy cách/MOQ của NCC yêu cầu tối thiểu <b>{suggestedQty.toLocaleString("vi-VN")}</b> mỗi đơn.</>
+            )}
           </div>
         </div>
       )}

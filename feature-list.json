@@ -53,8 +53,8 @@
       "name": "Đề xuất nhập hàng làm tròn theo MOQ/quy cách (hoàn thiện F09)",
       "description": "Công thức suggestedQty hiện tại trong formatters.js/AdminApp.jsx (TargetStock - available) trả về số lẻ, chưa làm tròn lên theo MOQ và quy cách đóng gói như ví dụ trong kế hoạch (đề xuất 1 chai 500ml thay vì 370ml). Cần dùng dữ liệu MOQ/quy cách từ feat-002 để điều chỉnh kết quả trước khi hiển thị trong RestockModal.",
       "dependencies": ["feat-002"],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Added roundOrderQty(rawNeed, moq, packSize) to frontend/src/utils/formatters.js — computes max(rawNeed, moq) then rounds up to the nearest packSize multiple, matching the plan's own worked example exactly (130ml position / 150 ROP / 500 target / 200ml MOQ / 500ml pack -> rawNeed 370 -> suggests 500, i.e. 1 chai). Kho tab's suggest calc now floors need at 0 (Math.max(0, TargetStock - position)) and pipes it through roundOrderQty instead of the old raw-subtraction + m.min floor. NewPurchaseOrderModal's AI box now shows the pre-rounding rawNeed plus packSize/MOQ, and the explanation text branches: when rawNeed>0 it explains the real shortfall, when rawNeed<=0 (already above target, MOQ is the only reason to order at all) it says so explicitly instead of the old always-on 'thấp hơn ROP' claim, which was factually wrong whenever MOQ — not an actual shortage — was the reason for the suggested quantity. Verified live in browser: wax-soy (min-order-only case) now reads 'đã đủ Target Stock ... nhưng quy cách/MOQ yêu cầu tối thiểu 10.000' instead of the previous misleading 'đang thấp hơn ROP'; suggested qty (10.000g) correctly equals ceil(max(0,10000)/5000)*5000. The genuine-shortage branch was verified algebraically against the plan's worked example (not exercised live since no seeded material currently has real demand history driving rawNeed above its MOQ floor). ./init.sh clean (lint 0 errors, build OK)."
     },
     {
       "id": "feat-008",

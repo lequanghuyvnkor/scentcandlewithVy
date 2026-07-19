@@ -2,9 +2,11 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 21:00
-**Session ID:** feat-004
-**Active Feature:** feat-004 - Kiểm kê kho (Stocktake) — DONE
+**Last Updated:** 2026-07-19 21:30
+**Session ID:** feat-007
+**Active Feature:** feat-007 - Đề xuất nhập hàng làm tròn theo MOQ/quy cách — DONE
+
+**QUAN TRỌNG — bối cảnh doanh nghiệp (user cung cấp 2026-07-19):** Đây là doanh nghiệp 1 người — chủ vừa quản lý vừa trực tiếp sản xuất, không có nhân viên riêng biệt. User yêu cầu: giữ nguyên toàn bộ tính năng quản lý hiện có (không bỏ bớt), nhưng feat-005 (phân quyền) KHÔNG nên xây dựng theo hướng chặn/giới hạn quyền giữa các vai trò (vì chỉ có 1 người thật). Đã thống nhất hướng đi: feat-005 sẽ là "gắn nhãn vai trò đang thao tác" (Kho/Sản xuất/Quản lý/Chủ shop) vào transaction — dùng để LỌC/BÁO CÁO sau này, không dùng để CHẶN thao tác. Ghép chung cơ chế với trường "người thực hiện" của feat-006 cho gọn (cùng là việc gắn nhãn ai/vai trò gì làm hành động, không phải access-control thật).
 
 ## Status
 
@@ -21,19 +23,21 @@
   - `completeStocktake`: chênh lệch dương → tạo lô mới `ADJ-N` (IN); chênh lệch âm → trừ qua `consumeMaterialBatches` (FEFO/FIFO) như các luồng xuất kho khác (OUT). Không sửa tay `material.qty` — đúng nguyên tắc #1.
   - Verify sống trên browser: mở ST-1 (seed sẵn 1 dòng đã đếm+giải trình, 2 dòng chưa) → nút Hoàn tất khoá đúng; nhập 2 dòng còn lại (1 dòng lệch 0 không cần lý do, 1 dòng lệch -5 cần lý do) → nút chỉ mở sau khi điền lý do; hoàn tất → đúng 2 giao dịch OUT tham chiếu đúng mã phiếu + lý do, không nhân đôi; Kho tab xác nhận jar-round 60→58, oil-sage 240→235, vẫn 1 lô (trừ từ lô có sẵn, không tạo lô âm).
 - [x] `./init.sh` sạch sau cả 4 feature (lint 0 lỗi/8 warning vô hại, build qua)
+- [x] **feat-007 hoàn thành**: `roundOrderQty(rawNeed, moq, packSize)` mới trong `formatters.js`, dùng trong Kho tab thay cho công thức trừ thô cũ. Sửa luôn lời giải thích AI-suggestion vốn luôn nói "đang thấp hơn ROP" dù đôi khi lý do thực sự là MOQ (không phải thiếu hàng) — giờ tách 2 nhánh văn bản đúng ngữ cảnh. Verify sống: wax-soy hiện đúng "đã đủ Target Stock... nhưng MOQ yêu cầu tối thiểu 10.000g".
 
 ### What's In Progress
 
-- [ ] (không có — feat-004 đã đóng, đã làm xong đúng thứ tự feat-003 → feat-004 theo yêu cầu user)
+- User đã xác nhận đây là **doanh nghiệp 1 người** (chủ vừa quản lý vừa sản xuất). Đã thống nhất thứ tự làm nốt: **feat-007 (xong) → feat-006 → feat-005**, và feat-005 đổi hướng thành "gắn nhãn vai trò" thay vì phân quyền chặn thật.
 
 ### What's Next
 
-- Hỏi user muốn làm feature nào tiếp theo. feat-005 (phân quyền) giờ đủ điều kiện dependency nhưng cần quyết định kiến trúc backend trước khi code (xem Blockers). feat-006 (sổ giao dịch đầy đủ), feat-007 (làm tròn MOQ), feat-008 (trạng thái tồn thành phẩm), feat-010 (báo cáo) đều đã đủ điều kiện dependency và không cần quyết định kiến trúc gì thêm.
+1. **feat-006** (hoàn thiện sổ giao dịch: người thực hiện + đủ loại giao dịch + tham chiếu lô/chứng từ) — làm tiếp theo.
+2. **feat-005** (rescoped: gắn "vai trò đang thao tác" vào transaction cho mục đích lọc/báo cáo, KHÔNG chặn quyền truy cập nào — vì chỉ 1 người dùng thật) — làm cuối, tận dụng cơ chế actor của feat-006.
 
 ## Blockers / Risks
 
-- [ ] feat-005 (phân quyền) cần quyết định kiến trúc: bật backend Express thật hay tiếp tục client-only — hỏi user trước khi code.
-- [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng.
+- [x] ~~feat-005 cần hỏi user về kiến trúc backend~~ — ĐÃ GIẢI QUYẾT: user xác nhận doanh nghiệp 1 người, feat-005 chỉ cần gắn nhãn vai trò (client-side, không cần backend/auth thật, không chặn quyền).
+- [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng — phù hợp với thực tế nghiệp vụ (xem trên), không còn là vấn đề cần giải quyết.
 - [ ] Giới hạn đã biết trong feat-001: hoàn kho đơn custom tạo lô "hoàn trả" mới thay vì truy ngược đúng lô gốc.
 - [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê (F16 có nhắc "người có quyền phê duyệt") — vì hệ thống chưa có phân quyền (feat-005 chưa làm), bất kỳ ai vào Admin cũng tự hoàn tất được. Sẽ khoá lại đúng vai trò khi feat-005 xong.
 - [ ] Môi trường browser-test của session này: `computer` tool's `left_click` không đáng tin cậy. Cách xử lý ổn định: tìm nút qua `document.querySelectorAll('button')`, gọi trực tiếp `element[reactPropsKey].onClick(...)` qua `javascript_tool`, và LUÔN tách hành động và bước kiểm tra thành 2 lời gọi `javascript_exec` riêng (gộp chung dễ đọc phải state cũ do timing).
