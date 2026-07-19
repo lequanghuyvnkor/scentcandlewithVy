@@ -217,5 +217,8 @@ export const SEED = {
       ],
     },
   ],
+  // Vai trò đang thao tác (F17, rescoped cho doanh nghiệp 1 người — xem AdminApp.jsx ROLES) — chỉ để gắn nhãn
+  // giao dịch cho báo cáo/lọc sau này, không dùng để chặn quyền vì chỉ có 1 người dùng thật.
+  currentRole: "quanly",
   nextOrderNum: 4, nextCustNum: 4, nextTxNum: 1, nextPoNum: 1, nextBatchNum: 31, nextPurNum: 3, nextStNum: 2,
 };

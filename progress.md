@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-19 21:30
-**Session ID:** feat-007
-**Active Feature:** feat-007 - Đề xuất nhập hàng làm tròn theo MOQ/quy cách — DONE
+**Last Updated:** 2026-07-19 22:15
+**Session ID:** feat-006
+**Active Feature:** feat-006 - Hoàn thiện sổ giao dịch kho (actor/txType/refDoc/batchId) — DONE
 
 **QUAN TRỌNG — bối cảnh doanh nghiệp (user cung cấp 2026-07-19):** Đây là doanh nghiệp 1 người — chủ vừa quản lý vừa trực tiếp sản xuất, không có nhân viên riêng biệt. User yêu cầu: giữ nguyên toàn bộ tính năng quản lý hiện có (không bỏ bớt), nhưng feat-005 (phân quyền) KHÔNG nên xây dựng theo hướng chặn/giới hạn quyền giữa các vai trò (vì chỉ có 1 người thật). Đã thống nhất hướng đi: feat-005 sẽ là "gắn nhãn vai trò đang thao tác" (Kho/Sản xuất/Quản lý/Chủ shop) vào transaction — dùng để LỌC/BÁO CÁO sau này, không dùng để CHẶN thao tác. Ghép chung cơ chế với trường "người thực hiện" của feat-006 cho gọn (cùng là việc gắn nhãn ai/vai trò gì làm hành động, không phải access-control thật).
 
@@ -24,23 +24,31 @@
   - Verify sống trên browser: mở ST-1 (seed sẵn 1 dòng đã đếm+giải trình, 2 dòng chưa) → nút Hoàn tất khoá đúng; nhập 2 dòng còn lại (1 dòng lệch 0 không cần lý do, 1 dòng lệch -5 cần lý do) → nút chỉ mở sau khi điền lý do; hoàn tất → đúng 2 giao dịch OUT tham chiếu đúng mã phiếu + lý do, không nhân đôi; Kho tab xác nhận jar-round 60→58, oil-sage 240→235, vẫn 1 lô (trừ từ lô có sẵn, không tạo lô âm).
 - [x] `./init.sh` sạch sau cả 4 feature (lint 0 lỗi/8 warning vô hại, build qua)
 - [x] **feat-007 hoàn thành**: `roundOrderQty(rawNeed, moq, packSize)` mới trong `formatters.js`, dùng trong Kho tab thay cho công thức trừ thô cũ. Sửa luôn lời giải thích AI-suggestion vốn luôn nói "đang thấp hơn ROP" dù đôi khi lý do thực sự là MOQ (không phải thiếu hàng) — giờ tách 2 nhánh văn bản đúng ngữ cảnh. Verify sống: wax-soy hiện đúng "đã đủ Target Stock... nhưng MOQ yêu cầu tối thiểu 10.000g".
+- [x] **feat-006 hoàn thành**: sổ giao dịch đầy đủ.
+  - `ROLES` (kho/sanxuat/quanly/chuso) + selector "Đang thao tác với vai trò" dưới hàng tab, ghi vào `db.currentRole` (mặc định "quanly") — chỉ để gắn nhãn, không chặn gì.
+  - `TX_TYPE_LABELS` (10 loại nghiệp vụ) + `actorRole`/`txType`/`refDoc` gắn vào MỌI điểm tạo giao dịch có sẵn (moveOrder xuất/hoàn, lệnh sản xuất hoàn thành, nhận hàng PO, hoàn tất kiểm kê).
+  - Những điểm tiêu thụ nhiều lô trong 1 hành động (xuất sản xuất, hoàn tất kiểm kê phần thiếu) đổi từ 1 dòng gộp sang 1 dòng/lô, mỗi dòng có đúng `batchId` riêng — truy vết chính xác tới từng lô.
+  - Thêm 2 loại giao dịch MỚI có UI thật (không chỉ khai báo enum): "Ghi hao hụt" (nút trên từng lô trong bảng lô ở tab Kho — chọn Hàng hỏng/Hàng hết hạn, trừ đúng lô đó, không FEFO) và "Khách trả hàng" (nút trên đơn "Hoàn tất" ở tab Đơn hàng — chọn số lượng trả theo từng sản phẩm).
+  - Bảng "Lịch sử biến động kho" thêm cột "Người TH" + dòng phụ hiện loại nghiệp vụ/Lô/Chứng từ dưới Lý do.
+  - Verify sống: đổi vai trò sang "Nhân viên kho" → ghi hao hụt "hết hạn" cho đúng LOT-4 (180ml, xác nhận LOT-3 không bị đụng) → sổ giao dịch hiện đúng "Hàng hết hạn · Lô: LOT-4" + actor đúng; khách trả 1 cây Lotus Dream trên DH-001 → sổ giao dịch hiện "Khách trả hàng · Chứng từ: DH-001", tồn sẵn bán Lotus Dream 0→1.
+  - Việc hoãn lại (nêu trong mô tả gốc nhưng không đủ hạ tầng): "chuyển vị trí kho" (chưa có khái niệm nhiều vị trí lưu kho) và "hàng dùng thử/tặng khách" (chưa có luồng riêng).
 
 ### What's In Progress
 
-- User đã xác nhận đây là **doanh nghiệp 1 người** (chủ vừa quản lý vừa sản xuất). Đã thống nhất thứ tự làm nốt: **feat-007 (xong) → feat-006 → feat-005**, và feat-005 đổi hướng thành "gắn nhãn vai trò" thay vì phân quyền chặn thật.
+- (không có — feat-007, feat-006 đã xong. Chuẩn bị làm feat-005 rescoped.)
 
 ### What's Next
 
-1. **feat-006** (hoàn thiện sổ giao dịch: người thực hiện + đủ loại giao dịch + tham chiếu lô/chứng từ) — làm tiếp theo.
-2. **feat-005** (rescoped: gắn "vai trò đang thao tác" vào transaction cho mục đích lọc/báo cáo, KHÔNG chặn quyền truy cập nào — vì chỉ 1 người dùng thật) — làm cuối, tận dụng cơ chế actor của feat-006.
+1. **feat-005** (rescoped: dùng dữ liệu `actorRole` feat-006 vừa dựng để làm báo cáo/lọc theo vai trò, KHÔNG chặn quyền truy cập nào) — làm tiếp theo, feature cuối cùng trong đợt này.
 
 ## Blockers / Risks
 
-- [x] ~~feat-005 cần hỏi user về kiến trúc backend~~ — ĐÃ GIẢI QUYẾT: user xác nhận doanh nghiệp 1 người, feat-005 chỉ cần gắn nhãn vai trò (client-side, không cần backend/auth thật, không chặn quyền).
-- [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng — phù hợp với thực tế nghiệp vụ (xem trên), không còn là vấn đề cần giải quyết.
+- [x] ~~feat-005 cần hỏi user về kiến trúc backend~~ — ĐÃ GIẢI QUYẾT: user xác nhận doanh nghiệp 1 người, feat-005 chỉ cần gắn nhãn vai trò (client-side, không cần backend/auth thật, không chặn quyền). feat-006 đã dựng sẵn `db.currentRole` + `actorRole` trên transactions — feat-005 chỉ cần XÀI dữ liệu này cho báo cáo, không cần dựng lại cơ chế gắn nhãn.
+- [ ] Toàn bộ app vẫn client-only (`window.storage`), một người dùng — phù hợp với thực tế nghiệp vụ, không còn là vấn đề cần giải quyết.
 - [ ] Giới hạn đã biết trong feat-001: hoàn kho đơn custom tạo lô "hoàn trả" mới thay vì truy ngược đúng lô gốc.
-- [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê (F16 có nhắc "người có quyền phê duyệt") — vì hệ thống chưa có phân quyền (feat-005 chưa làm), bất kỳ ai vào Admin cũng tự hoàn tất được. Sẽ khoá lại đúng vai trò khi feat-005 xong.
-- [ ] Môi trường browser-test của session này: `computer` tool's `left_click` không đáng tin cậy. Cách xử lý ổn định: tìm nút qua `document.querySelectorAll('button')`, gọi trực tiếp `element[reactPropsKey].onClick(...)` qua `javascript_tool`, và LUÔN tách hành động và bước kiểm tra thành 2 lời gọi `javascript_exec` riêng (gộp chung dễ đọc phải state cũ do timing).
+- [ ] Giới hạn đã biết trong feat-004: không có bước phê duyệt điều chỉnh kiểm kê thật (chỉ 1 người dùng nên không có ý nghĩa) — feat-005 rescoped có thể thêm bước "xác nhận nhẹ" mang tính nhắc nhở, không phải access-control.
+- [ ] feat-006 chưa làm "chuyển vị trí kho" và "hàng dùng thử/tặng khách" — thiếu hạ tầng tương ứng (đa vị trí lưu kho, luồng tặng/mẫu riêng), nằm ngoài phạm vi hợp lý của 1 feature.
+- [ ] Môi trường browser-test của session này: `computer` tool's `left_click` không đáng tin cậy. Cách xử lý ổn định: tìm nút qua `document.querySelectorAll('button')`, gọi trực tiếp `element[reactPropsKey].onClick(...)` qua `javascript_tool`, và LUÔN tách hành động và bước kiểm tra thành 2 lời gọi `javascript_exec` riêng. Khi trang có NHIỀU input cùng type (vd. nhiều input number), lọc theo ngữ cảnh gần nhất (label/placeholder hoặc đếm số lượng input hiện có) thay vì lấy `.find()` đầu tiên — dễ nhầm sang input nền phía sau modal.
 
 ## Decisions Made
 

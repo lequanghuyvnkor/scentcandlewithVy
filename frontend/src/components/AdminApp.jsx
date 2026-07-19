@@ -32,6 +32,29 @@ function addDays(dateStr, days) {
   return d.toISOString().slice(0, 10);
 }
 
+// F17 (rescoped cho doanh nghiệp 1 người, xem progress.md): chỉ gắn NHÃN vai trò đang thao tác lên
+// mỗi giao dịch để lọc/báo cáo sau này — KHÔNG chặn/giới hạn thao tác nào, vì chỉ có 1 người dùng thật.
+const ROLES = [
+  { id: "kho", label: "Nhân viên kho", emoji: "🧺" },
+  { id: "sanxuat", label: "Nhân viên sản xuất", emoji: "🏭" },
+  { id: "quanly", label: "Quản lý", emoji: "🔑" },
+  { id: "chuso", label: "Chủ shop", emoji: "👑" },
+];
+
+// F03 — phân loại nghiệp vụ của từng giao dịch kho (rộng hơn IN/OUT thô).
+const TX_TYPE_LABELS = {
+  purchase_receipt: "Nhập mua hàng",
+  production_consume: "Xuất sản xuất",
+  production_yield: "Nhập thành phẩm",
+  sales_issue: "Xuất bán hàng",
+  customer_return: "Khách trả hàng",
+  material_return: "Hoàn trả NVL",
+  damaged: "Hàng hỏng",
+  expired: "Hàng hết hạn",
+  count_adjustment: "Điều chỉnh kiểm kê",
+  reversal: "Hoàn tác trạng thái",
+};
+
 export function AdminApp({ db, setDb, showToast }) {
   const [tab, setTab] = useState("dashboard");
   const [modal, setModal] = useState(null);
@@ -65,18 +88,22 @@ export function AdminApp({ db, setDb, showToast }) {
       let nextBatchNum = d.nextBatchNum || 1;
       const today = new Date().toISOString().slice(0, 10);
 
+      const actorRole = d.currentRole || "quanly";
       for (const line of st.lines) {
         const diff = (line.actualQty ?? line.systemQty) - line.systemQty;
         if (diff === 0) continue;
         if (diff > 0) {
           const mat = d.materials.find((m) => m.id === line.materialId);
-          batches = [...batches, { id: `ADJ-${nextBatchNum++}`, materialId: line.materialId, receivedDate: today, expiryDate: null, initialQty: diff, remainingQty: diff, unitCost: mat?.price ?? 0, qcStatus: "passed", note: `Điều chỉnh kiểm kê ${st.id}` }];
-          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", itemId: line.materialId, qty: diff, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thừa so với hệ thống"}`, date: new Date().toISOString() });
+          const newBatch = { id: `ADJ-${nextBatchNum++}`, materialId: line.materialId, receivedDate: today, expiryDate: null, initialQty: diff, remainingQty: diff, unitCost: mat?.price ?? 0, qcStatus: "passed", note: `Điều chỉnh kiểm kê ${st.id}` };
+          batches = [...batches, newBatch];
+          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "count_adjustment", actorRole, refDoc: st.id, batchId: newBatch.id, itemId: line.materialId, qty: diff, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thừa so với hệ thống"}`, date: new Date().toISOString() });
         } else {
           const need = Math.abs(diff);
           const consumed = consumeMaterialBatches(batches, line.materialId, need);
           batches = consumed.batches;
-          transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", itemId: line.materialId, qty: -need, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thiếu so với hệ thống"}`, date: new Date().toISOString(), consumedFrom: consumed.consumedFrom });
+          for (const c of consumed.consumedFrom) {
+            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "count_adjustment", actorRole, refDoc: st.id, batchId: c.batchId, itemId: line.materialId, qty: -c.qty, reason: `Điều chỉnh kiểm kê ${st.id}: ${line.note || "thiếu so với hệ thống"}`, date: new Date().toISOString() });
+          }
         }
       }
       const materials = syncMaterialQtyFromBatches(d.materials, batches);
@@ -100,6 +127,7 @@ export function AdminApp({ db, setDb, showToast }) {
       let materials = d.materials, products = d.products, transactions = [...(d.transactions || [])], nextTxNum = d.nextTxNum || 1;
       let batches = d.batches || [], nextBatchNum = d.nextBatchNum || 1;
       let deducted = order.deducted;
+      const actorRole = d.currentRole || "quanly";
 
       if (newStatus === "producing" && !order.deducted) {
         const missing = checkStockForItems(order.items, d.materials, d.products);
@@ -114,12 +142,14 @@ export function AdminApp({ db, setDb, showToast }) {
         const consumed = consumeManyBatches(batches, matNeed);
         batches = consumed.batches;
         materials = syncMaterialQtyFromBatches(d.materials, batches);
-        for (const [mid, q] of Object.entries(matNeed)) {
-          transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", itemId: mid, qty: -q, reason: `Xuất sản xuất custom ĐH ${orderId}`, date: new Date().toISOString(), consumedFrom: consumed.consumedLog[mid] || [] });
+        for (const mid of Object.keys(matNeed)) {
+          for (const c of consumed.consumedLog[mid] || []) {
+            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "production_consume", actorRole, refDoc: orderId, batchId: c.batchId, itemId: mid, qty: -c.qty, reason: `Xuất sản xuất custom ĐH ${orderId}`, date: new Date().toISOString() });
+          }
         }
         products = d.products.map((p) => {
           if (prodNeed[p.id]) {
-            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", itemId: p.id, qty: -prodNeed[p.id], reason: `Xuất kho thành phẩm ĐH ${orderId}`, date: new Date().toISOString() });
+            transactions.push({ id: `TX-${nextTxNum++}`, type: "OUT", txType: "sales_issue", actorRole, refDoc: orderId, itemId: p.id, qty: -prodNeed[p.id], reason: `Xuất kho thành phẩm ĐH ${orderId}`, date: new Date().toISOString() });
             return { ...p, qty: p.qty - prodNeed[p.id] };
           }
           return p;
@@ -137,13 +167,14 @@ export function AdminApp({ db, setDb, showToast }) {
         const today = new Date().toISOString().slice(0, 10);
         for (const [mid, q] of Object.entries(matNeed)) {
           const mat = d.materials.find((x) => x.id === mid);
-          batches = [...batches, { id: `RET-${nextBatchNum++}`, materialId: mid, receivedDate: today, expiryDate: null, initialQty: q, remainingQty: q, unitCost: mat?.price ?? 0, qcStatus: "passed", note: `Hoàn kho custom ĐH ${orderId}` }];
-          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", itemId: mid, qty: q, reason: `Hoàn kho custom ĐH ${orderId}`, date: new Date().toISOString() });
+          const retBatch = { id: `RET-${nextBatchNum++}`, materialId: mid, receivedDate: today, expiryDate: null, initialQty: q, remainingQty: q, unitCost: mat?.price ?? 0, qcStatus: "passed", note: `Hoàn kho custom ĐH ${orderId}` };
+          batches = [...batches, retBatch];
+          transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "material_return", actorRole, refDoc: orderId, batchId: retBatch.id, itemId: mid, qty: q, reason: `Hoàn kho custom ĐH ${orderId}`, date: new Date().toISOString() });
         }
         materials = syncMaterialQtyFromBatches(d.materials, batches);
         products = d.products.map((p) => {
           if (prodNeed[p.id]) {
-            transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", itemId: p.id, qty: prodNeed[p.id], reason: `Hoàn kho ĐH ${orderId}`, date: new Date().toISOString() });
+            transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "reversal", actorRole, refDoc: orderId, itemId: p.id, qty: prodNeed[p.id], reason: `Hoàn kho ĐH ${orderId}`, date: new Date().toISOString() });
             return { ...p, qty: p.qty + prodNeed[p.id] };
           }
           return p;
@@ -241,6 +272,20 @@ export function AdminApp({ db, setDb, showToast }) {
             )}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <span style={{ fontSize: 10.5, color: T.muted }}>Đang thao tác với vai trò:</span>
+        <select
+          value={db.currentRole || "quanly"}
+          onChange={(e) => setDb((d) => ({ ...d, currentRole: e.target.value }))}
+          title="Chỉ để gắn nhãn cho sổ giao dịch/báo cáo — không giới hạn thao tác nào"
+          style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "inherit", color: T.text, background: "#fff" }}
+        >
+          {ROLES.map((r) => (
+            <option key={r.id} value={r.id}>{r.emoji} {r.label}</option>
+          ))}
+        </select>
       </div>
 
       {tab === "dashboard" &&
@@ -410,6 +455,11 @@ export function AdminApp({ db, setDb, showToast }) {
                               </Btn>
                             )}
                           </div>
+                          {o.status === "done" && o.items.some((it) => it.type === "catalog") && (
+                            <Btn small onClick={() => setModal({ type: "customerReturn", data: o.id })} style={{ width: "100%", marginTop: 4, fontSize: 10.5 }}>
+                              ↩️ Khách trả hàng
+                            </Btn>
+                          )}
                         </Card>
                       );
                     })}
@@ -545,8 +595,9 @@ export function AdminApp({ db, setDb, showToast }) {
                         let txs = [...(d.transactions || [])];
                         let nextTx = d.nextTxNum || 1;
                         let prods = d.products.map(p => p.id === po.productId ? { ...p, qty: p.qty + po.qty } : p);
+                        const actorRole = d.currentRole || "quanly";
 
-                        txs.push({ id: `TX-${nextTx++}`, type: "IN", itemId: po.productId, qty: po.qty, reason: `Nhập thành phẩm ${po.id}`, date: new Date().toISOString() });
+                        txs.push({ id: `TX-${nextTx++}`, type: "IN", txType: "production_yield", actorRole, refDoc: po.id, itemId: po.productId, qty: po.qty, reason: `Nhập thành phẩm ${po.id}`, date: new Date().toISOString() });
 
                         const matNeed = {};
                         for (const [mid, per] of BOM[po.productId] || []) matNeed[mid] = (matNeed[mid] || 0) + per * po.qty;
@@ -554,8 +605,10 @@ export function AdminApp({ db, setDb, showToast }) {
                         // Trừ NVL theo FEFO/FIFO qua các lô (F04)
                         const consumed = consumeManyBatches(d.batches || [], matNeed);
                         const mats = syncMaterialQtyFromBatches(d.materials, consumed.batches);
-                        for (const [mid, q] of Object.entries(matNeed)) {
-                          txs.push({ id: `TX-${nextTx++}`, type: "OUT", itemId: mid, qty: -q, reason: `Xuất sản xuất ${po.id}`, date: new Date().toISOString(), consumedFrom: consumed.consumedLog[mid] || [] });
+                        for (const mid of Object.keys(matNeed)) {
+                          for (const c of consumed.consumedLog[mid] || []) {
+                            txs.push({ id: `TX-${nextTx++}`, type: "OUT", txType: "production_consume", actorRole, refDoc: po.id, batchId: c.batchId, itemId: mid, qty: -c.qty, reason: `Xuất sản xuất ${po.id}`, date: new Date().toISOString() });
+                          }
                         }
 
                         return {
@@ -836,6 +889,11 @@ export function AdminApp({ db, setDb, showToast }) {
                           <div style={{ fontSize: 10.5, color: T.muted, flex: 1 }}>Nhập {new Date(b.receivedDate).toLocaleDateString("vi-VN")}</div>
                           <div style={{ fontSize: 11, fontWeight: 700, minWidth: 70, textAlign: "right" }}>{b.remainingQty.toLocaleString("vi-VN")}/{b.initialQty.toLocaleString("vi-VN")} {m.unit}</div>
                           <Badge color={badgeStyle[0]} deep={badgeStyle[1]}>{st.label}</Badge>
+                          {b.remainingQty > 0 && (
+                            <Btn small danger onClick={() => setModal({ type: "writeOff", data: { batchId: b.id, materialId: m.id } })} style={{ padding: "3px 8px", fontSize: 9.5 }}>
+                              Ghi hao hụt
+                            </Btn>
+                          )}
                         </div>
                       );
                     })}
@@ -855,12 +913,14 @@ export function AdminApp({ db, setDb, showToast }) {
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text }}>Mã hàng</th>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text, textAlign: "right" }}>Số lượng</th>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text }}>Lý do</th>
+                    <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text }}>Người TH</th>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text, textAlign: "right" }}>Thời gian</th>
                   </tr>
                 </thead>
                 <tbody>
                   {([...(db.transactions || [])].reverse().slice(0, 15).map(tx => {
                     const isIN = tx.type === "IN";
+                    const role = ROLES.find((r) => r.id === tx.actorRole);
                     return (
                       <tr key={tx.id}>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}` }}>
@@ -870,7 +930,17 @@ export function AdminApp({ db, setDb, showToast }) {
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, textAlign: "right", color: isIN ? T.greenDeep : T.redDeep, fontWeight: 700 }}>
                           {isIN ? "+" : ""}{tx.qty}
                         </td>
-                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted }}>{tx.reason}</td>
+                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted }}>
+                          <div>{tx.reason}</div>
+                          {(tx.txType || tx.batchId || tx.refDoc) && (
+                            <div style={{ fontSize: 9.5, color: "#B8A78A", marginTop: 2 }}>
+                              {tx.txType && TX_TYPE_LABELS[tx.txType]}
+                              {tx.batchId && ` · Lô: ${tx.batchId}`}
+                              {tx.refDoc && ` · Chứng từ: ${tx.refDoc}`}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted, whiteSpace: "nowrap" }}>{role ? `${role.emoji} ${role.label}` : "—"}</td>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, textAlign: "right", color: T.muted }}>
                           {tx.date && !isNaN(new Date(tx.date).getTime()) ? new Date(tx.date).toLocaleString("vi-VN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                         </td>
@@ -878,7 +948,7 @@ export function AdminApp({ db, setDb, showToast }) {
                     );
                   }))}
                   {(!db.transactions || db.transactions.length === 0) && (
-                    <tr><td colSpan={5} style={{ padding: "16px", textAlign: "center", color: T.muted }}>Chưa có giao dịch nào</td></tr>
+                    <tr><td colSpan={6} style={{ padding: "16px", textAlign: "center", color: T.muted }}>Chưa có giao dịch nào</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1142,7 +1212,7 @@ export function AdminApp({ db, setDb, showToast }) {
                   qcStatus: "passed",
                 };
                 const batches = [...(d.batches || []), batch];
-                const tx = { id: `TX-${d.nextTxNum || 1}`, type: "IN", itemId: target.materialId, qty, reason: `Nhận hàng đơn mua ${target.id}`, date: new Date().toISOString(), batchId: batch.id };
+                const tx = { id: `TX-${d.nextTxNum || 1}`, type: "IN", txType: "purchase_receipt", actorRole: d.currentRole || "quanly", refDoc: target.id, itemId: target.materialId, qty, reason: `Nhận hàng đơn mua ${target.id}`, date: new Date().toISOString(), batchId: batch.id };
                 return {
                   ...d,
                   batches,
@@ -1206,6 +1276,65 @@ export function AdminApp({ db, setDb, showToast }) {
           }}
         />
       )}
+      {modal?.type === "writeOff" && (() => {
+        const batch = (db.batches || []).find((b) => b.id === modal.data.batchId);
+        const material = db.materials.find((m) => m.id === modal.data.materialId);
+        if (!batch || !material) return null;
+        return (
+          <WriteOffModal
+            batch={batch}
+            material={material}
+            onClose={() => setModal(null)}
+            onSave={(txType, qty, note) => {
+              setDb((d) => {
+                const batches = d.batches.map((b) => (b.id === batch.id ? { ...b, remainingQty: b.remainingQty - qty } : b));
+                const materials = syncMaterialQtyFromBatches(d.materials, batches);
+                const tx = {
+                  id: `TX-${d.nextTxNum || 1}`,
+                  type: "OUT",
+                  txType,
+                  actorRole: d.currentRole || "quanly",
+                  refDoc: null,
+                  batchId: batch.id,
+                  itemId: material.id,
+                  qty: -qty,
+                  reason: `${TX_TYPE_LABELS[txType]}${note ? ": " + note : ""}`,
+                  date: new Date().toISOString(),
+                };
+                return { ...d, batches, materials, transactions: [...(d.transactions || []), tx], nextTxNum: (d.nextTxNum || 1) + 1 };
+              });
+              setModal(null);
+              showToast("Đã ghi nhận hao hụt! 📉");
+            }}
+          />
+        );
+      })()}
+      {modal?.type === "customerReturn" && (() => {
+        const order = db.orders.find((o) => o.id === modal.data);
+        if (!order) return null;
+        return (
+          <CustomerReturnModal
+            order={order}
+            onClose={() => setModal(null)}
+            onSave={(qtys) => {
+              setDb((d) => {
+                let products = d.products;
+                const transactions = [...(d.transactions || [])];
+                let nextTxNum = d.nextTxNum || 1;
+                const actorRole = d.currentRole || "quanly";
+                for (const [pid, q] of Object.entries(qtys)) {
+                  if (!q) continue;
+                  products = products.map((p) => (p.id === pid ? { ...p, qty: p.qty + q } : p));
+                  transactions.push({ id: `TX-${nextTxNum++}`, type: "IN", txType: "customer_return", actorRole, refDoc: order.id, itemId: pid, qty: q, reason: `Khách trả hàng ĐH ${order.id}`, date: new Date().toISOString() });
+                }
+                return { ...d, products, transactions, nextTxNum };
+              });
+              setModal(null);
+              showToast("Đã ghi nhận khách trả hàng! ↩️");
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -1401,6 +1530,70 @@ function NewStocktakeModal({ materials, onClose, onSave }) {
       </div>
       <Btn primary disabled={selected.size === 0} style={{ width: "100%" }} onClick={() => onSave([...selected])}>
         Tạo phiếu ({selected.size} NVL) 📋
+      </Btn>
+    </Modal>
+  );
+}
+
+function WriteOffModal({ batch, material, onClose, onSave }) {
+  const [txType, setTxType] = useState("damaged");
+  const [qty, setQty] = useState(batch.remainingQty);
+  const [note, setNote] = useState("");
+
+  return (
+    <Modal title={`Ghi nhận hao hụt — ${material.emoji} ${material.name}`} onClose={onClose}>
+      <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>
+        Lô <b style={{ color: T.text }}>{batch.id}</b> · còn {batch.remainingQty.toLocaleString("vi-VN")}{material.unit}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {["damaged", "expired"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTxType(t)}
+            style={{
+              flex: 1, padding: "8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+              border: `2px solid ${txType === t ? T.red : T.line}`, background: txType === t ? "#FBE3DA" : "#fff", color: txType === t ? T.redDeep : T.muted,
+            }}
+          >
+            {TX_TYPE_LABELS[t]}
+          </button>
+        ))}
+      </div>
+      <Input label={`Số lượng hao hụt (${material.unit})`} type="number" value={qty} onChange={setQty} />
+      <Input label="Ghi chú" value={note} onChange={setNote} placeholder="VD: vỡ khi vận chuyển nội bộ" />
+      <Btn primary disabled={qty <= 0 || qty > batch.remainingQty} style={{ width: "100%" }} onClick={() => onSave(txType, qty, note)}>
+        Ghi nhận 📉
+      </Btn>
+    </Modal>
+  );
+}
+
+function CustomerReturnModal({ order, onClose, onSave }) {
+  const catalogItems = order.items.filter((it) => it.type === "catalog");
+  const [qtys, setQtys] = useState(() => Object.fromEntries(catalogItems.map((it) => [it.productId, 0])));
+  const totalReturn = Object.values(qtys).reduce((s, q) => s + (q || 0), 0);
+
+  return (
+    <Modal title={`Khách trả hàng — ${order.id}`} onClose={onClose}>
+      <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>Chọn số lượng khách trả cho từng sản phẩm trong đơn.</div>
+      {catalogItems.map((it) => {
+        const r = RECIPES[it.productId];
+        return (
+          <div key={it.productId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px dashed ${T.line}` }}>
+            <div style={{ flex: 1, fontSize: 12.5 }}>{r?.emoji} {r?.name} <span style={{ color: T.muted, fontSize: 10.5 }}>(đã mua {it.qty})</span></div>
+            <input
+              type="number"
+              min="0"
+              max={it.qty}
+              value={qtys[it.productId]}
+              onChange={(e) => setQtys((q) => ({ ...q, [it.productId]: Math.min(it.qty, Math.max(0, parseInt(e.target.value) || 0)) }))}
+              style={{ width: 60, padding: "4px 6px", fontSize: 12, border: `1px solid ${T.line}`, borderRadius: 6, outline: "none", textAlign: "center" }}
+            />
+          </div>
+        );
+      })}
+      <Btn primary disabled={totalReturn <= 0} style={{ width: "100%", marginTop: 14 }} onClick={() => onSave(qtys)}>
+        Xác nhận trả hàng ({totalReturn}) ↩️
       </Btn>
     </Modal>
   );
