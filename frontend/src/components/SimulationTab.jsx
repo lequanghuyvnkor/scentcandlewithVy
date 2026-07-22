@@ -211,7 +211,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                     fontFamily: "'Josefin Sans',sans-serif",
                     letterSpacing: "0.05em",
                     background: done ? T.gold : "transparent",
-                    color: done ? T.card : active ? T.text : T.muted,
+                    color: done ? T.dark : active ? T.text : T.muted,
                     flexShrink: 0,
                   }}
                 >
@@ -220,7 +220,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                 <div
                   style={{
                     ...TYPE.eyebrow,
-                    color: active ? T.text : done ? T.gold : T.muted,
+                    color: active ? T.text : done ? T.goldDeep : T.muted,
                   }}
                 >
                   {s.label}
@@ -234,7 +234,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 0 && (
         <Card>
-          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 01</div>
+          <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 10 }}>STEP 01</div>
           <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Choose Your Vessel</div>
           <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 20 }}>
             10 vessel forms, each with a distinct character
@@ -276,7 +276,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 1 && (
         <Card>
-          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 02</div>
+          <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 10 }}>STEP 02</div>
           <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Select Your Wax</div>
           <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 20 }}>Mỗi loại sáp cho cảm giác khác nhau</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -313,10 +313,10 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 2 && (
         <Card>
-          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 03</div>
+          <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 10 }}>STEP 03</div>
           <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Compose Your Scent</div>
           <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 16 }}>
-            Chọn tối đa 4 mùi — tổng nên dưới <b style={{ color: T.gold, fontWeight: 600 }}>{wax.loadMax}%</b>
+            Chọn tối đa 4 mùi — tổng nên dưới <b style={{ color: T.goldDeep, fontWeight: 600 }}>{wax.loadMax}%</b>
           </div>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20, borderBottom: `1px solid ${T.lineHair}` }}>
             {fams.map((f) => (
@@ -377,7 +377,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   <div key={id} style={{ marginBottom: 14 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, marginBottom: 6 }}>
                       <span>{f.name}</span>
-                      <span style={{ fontWeight: 600, color: T.gold }}>{pct}%</span>
+                      <span style={{ fontWeight: 600, color: T.goldDeep }}>{pct}%</span>
                     </div>
                     <input
                       type="range"
@@ -410,7 +410,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 3 && (
         <Card>
-          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 04</div>
+          <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 10 }}>STEP 04</div>
           <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 16 }}>Colour Your Candle</div>
           <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ background: T.dark, borderRadius: 0, padding: "20px 24px", display: "flex", justifyContent: "center" }}>
@@ -481,7 +481,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
       {step === 4 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Card>
-            <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 05</div>
+            <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 10 }}>STEP 05</div>
             <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 16 }}>Your Creation</div>
             <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
               <div style={{ background: T.dark, borderRadius: 0, padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>

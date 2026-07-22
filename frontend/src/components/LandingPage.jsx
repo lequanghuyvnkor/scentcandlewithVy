@@ -66,7 +66,7 @@ export function LandingPage({ setView }) {
               <div style={{ fontSize: 10.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, lineHeight: 1.7 }}>
                 {items.map(([, r]) => r.name).join(" · ")}
               </div>
-              <div style={{ textAlign: "right", marginTop: 14, color: T.gold, fontSize: 13 }}>→</div>
+              <div style={{ textAlign: "right", marginTop: 14, color: T.goldDeep, fontSize: 13 }}>→</div>
             </Card>
           );
         })}
@@ -77,7 +77,7 @@ export function LandingPage({ setView }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
         {STEPS.map((s) => (
           <Card key={s.num} style={{ textAlign: "center" }}>
-            <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 16 }}>{s.num}</div>
+            <div style={{ ...TYPE.eyebrow, color: T.goldDeep, marginBottom: 16 }}>{s.num}</div>
             <div style={{ fontSize: 13, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>{s.title}</div>
             <div style={{ fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted }}>{s.desc}</div>
           </Card>

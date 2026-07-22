@@ -49,7 +49,8 @@ export function Card({ children, style, onClick }) {
 export function Button({ children, onClick, variant = "ghost", small, disabled, style }) {
   const variants = {
     primary: { background: THEME.dark, color: THEME.gold, border: `1px solid ${THEME.dark}` },
-    gold: { background: THEME.gold, color: THEME.card, border: `1px solid ${THEME.gold}` },
+    // white-on-gold is ~2.2:1 (fails AA) — dark text on gold is ~6.5:1
+    gold: { background: THEME.gold, color: THEME.dark, border: `1px solid ${THEME.gold}` },
     ghost: { background: "transparent", color: THEME.text, border: `1px solid ${THEME.line}` },
     danger: { background: "transparent", color: THEME.redDeep, border: `1px solid ${THEME.redDeep}` },
   };
@@ -127,7 +128,8 @@ export function Input({ label, value, onChange, type = "text", placeholder, styl
 export function Badge({ children, variant = "default" }) {
   const variants = {
     default: { color: THEME.muted, border: `1px solid ${THEME.line}` },
-    gold: { color: THEME.gold, border: `1px solid ${THEME.gold}` },
+    // gold text on a light surface is ~2:1 (fails AA) — goldDeep is ~4:1
+    gold: { color: THEME.goldDeep, border: `1px solid ${THEME.goldDeep}` },
     success: { color: THEME.greenDeep, border: `1px solid ${THEME.greenDeep}` },
     danger: { color: THEME.redDeep, border: `1px solid ${THEME.redDeep}` },
     dark: { color: THEME.card, border: `1px solid ${THEME.dark}`, background: THEME.dark },

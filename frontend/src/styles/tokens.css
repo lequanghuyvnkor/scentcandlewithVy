@@ -1,0 +1,98 @@
+/* SOLACE · Bespoke Candle · Saigon — design tokens
+ * Portable reference per the Hallmark anti-slop discipline: every colour used
+ * anywhere in the app should trace back to one of these named values. The
+ * React components consume the JS-object mirror of this file
+ * (frontend/src/data/theme.js) via inline styles — this file exists so the
+ * palette is documented in the OKLCH format Hallmark expects and so a small
+ * set of global rules (focus ring, reduced motion, mobile floor) have
+ * somewhere real to live as actual CSS, which inline `style={{}}` objects
+ * cannot express.
+ */
+
+:root {
+  /* Backgrounds */
+  --color-paper: oklch(94.9% 0.014 74.4);   /* bg — parchment page background */
+  --color-surface: oklch(100% 0 0);          /* card — white surface */
+  --color-surface-2: oklch(97.5% 0.008 73.7); /* soft — inset panels */
+  --color-dark: oklch(28% 0.013 72.3);       /* dark — hero / primary buttons */
+
+  /* Text */
+  --color-text: oklch(28% 0.013 72.3);
+  --color-text-sub: oklch(36.9% 0.03 70.7);  /* cocoa */
+  --color-muted: oklch(56.1% 0.059 70.8);
+
+  /* Accent (gold) — CONTRAST RULE: gold only works as TEXT/fill on --color-dark
+   * (6.5:1). On paper/surface it drops to ~2:1 — use --color-gold-deep for
+   * text/borders on light backgrounds instead, and --color-dark for text on
+   * a gold-filled surface (white-on-gold is ~2.2:1, also fails). */
+  --color-gold: oklch(75% 0.085 82.1);           /* fills, borders, accents */
+  --color-gold-deep: oklch(60% 0.089 74);        /* gold text on light bg (~4:1) */
+  --color-gold-light: oklch(89.2% 0.043 81.1);   /* selected-state tint */
+
+  /* Borders */
+  --color-line: oklch(86.3% 0.028 76.2);
+  --color-line-hair: oklch(91% 0.024 79.7);
+  --color-line-dark: oklch(77.7% 0.04 80);
+
+  /* Status */
+  --color-success-bg: oklch(94.4% 0.016 133.8);
+  --color-success: oklch(48% 0.068 138.5);
+  --color-amber-bg: oklch(94.9% 0.019 80.1);
+  --color-amber: oklch(53.3% 0.085 72);
+  --color-info-bg: oklch(93.6% 0.01 238.5);
+  --color-info: oklch(45.2% 0.052 239.5);
+  --color-danger-bg: oklch(93.9% 0.014 39.4);
+  --color-danger: oklch(45.6% 0.114 32.9);
+
+  /* Typography */
+  --font-display: 'Cinzel', serif;
+  --font-body: 'Josefin Sans', sans-serif;
+
+  /* Spacing (4pt scale) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 350ms;
+
+  --radius-card: 2px;
+  --radius-flat: 0px;
+}
+
+/* Mobile hard floor — no horizontal scroll at any width */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Focus-visible ring — instant, ≥3:1 contrast, never animated.
+ * Applies to every native interactive element; React components render
+ * plain <button>/<input>/<a> so this reaches all of them without needing
+ * per-component CSS classes. */
+:focus-visible {
+  outline: 2px solid var(--color-gold-deep);
+  outline-offset: 2px;
+  transition: none;
+}
+
+/* Reduced motion — collapse the app's handful of transitions (Card border,
+ * Btn hover, chat-launcher expand) to an instant/near-instant crossfade. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

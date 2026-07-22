@@ -53,7 +53,10 @@ export function Header({ view, setView, identity, adminAuthed, onOpenLogin, onLo
                 border: "none",
                 background: "transparent",
                 cursor: "pointer",
-                color: active ? T.gold : T.muted,
+                whiteSpace: "nowrap",
+                // gold text on the parchment header is ~2:1 (fails AA) — the
+                // gold underline alone carries the accent, text stays full-contrast
+                color: active ? T.text : T.muted,
                 borderBottom: active ? `1px solid ${T.gold}` : "1px solid transparent",
                 borderRadius: 0,
               }}

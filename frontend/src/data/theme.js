@@ -33,6 +33,13 @@ export const T = {
   blue: "#E4EBF0", blueDeep: "#3A5A70",
   lilac: "#EDE6F0", lilacDeep: "#6B5478",
   red: "#F4E8E4", redDeep: "#8B3A2A", redSoft: "#F4E8E4",
+
+  // JarCandle SVG materials — named so no illustration ships an unlocked
+  // inline hex (Hallmark anti-slop gate 48: mid-render token improvisation).
+  flameCore: "#EFAE5C", flameMid: "#F9D888", flameTip: "#FFF6DE",
+  glassHighlight: "#FFFFFF",
+  lidWood: "#C4A876", lidCork: "#B98A5C", lidTin: "#C9C2AE",
+  lidMasonBand: "#B7A986", lidMasonWire: "#9C9284",
 };
 
 // Typography roles — Cinzel for identity/numbers, Josefin Sans for UI/navigation.
