@@ -205,7 +205,10 @@ export function Modal({ title, onClose, children }) {
             >
               SOLACE
             </div>
-            <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: THEME.text }}>{title}</div>
+            {/* Josefin, not Cinzel: most modal titles in this app are Vietnamese
+             * copy, and Cinzel has no Vietnamese glyph coverage (latin + latin-ext
+             * only) — it silently falls back per-character and looks broken. */}
+            <div style={{ fontSize: 17, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, letterSpacing: "0.02em", color: THEME.text }}>{title}</div>
           </div>
           <button
             onClick={onClose}

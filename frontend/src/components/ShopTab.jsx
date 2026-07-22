@@ -43,7 +43,7 @@ export function ShopTab({ db, setDb, identity, showToast }) {
   return (
     <div>
       <div style={{ ...TYPE.eyebrow, color: T.muted, marginBottom: 8 }}>SOLACE COLLECTION</div>
-      <div style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 8 }}>Cửa hàng nến thơm</div>
+      <div style={{ fontSize: 24, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, color: T.text, marginBottom: 8 }}>Cửa hàng nến thơm</div>
       <div style={{ fontSize: 12, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 24 }}>
         Eight compositions across four collections
       </div>

@@ -341,7 +341,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
                 <Card>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 14 }}>Doanh thu 7 ngày (nghìn đ)</div>
+                  <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Doanh thu 7 ngày (nghìn đ)</div>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={days} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={T.line} />
@@ -353,7 +353,7 @@ export function AdminApp({ db, setDb, showToast }) {
                   </ResponsiveContainer>
                 </Card>
                 <Card>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 14 }}>Logistics đơn hàng</div>
+                  <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Logistics đơn hàng</div>
                   <ResponsiveContainer width="100%" height={140}>
                     <PieChart>
                       <Pie data={STATUSES.map(st => ({ name: st.label, value: db.orders.filter(o => o.status === st.id).length, color: st.deep })).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2}>
@@ -375,7 +375,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Card>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Bán chạy nhất</div>
+                  <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Bán chạy nhất</div>
                   {topProducts.map((p, i) => (
                     <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < topProducts.length - 1 ? `1px dashed ${T.lineHair}` : "none" }}>
                       <div style={{ flex: 1 }}>
@@ -389,7 +389,7 @@ export function AdminApp({ db, setDb, showToast }) {
                   ))}
                 </Card>
                 <Card>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Cần nhập thêm</div>
+                  <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Cần nhập thêm</div>
                   {lowStock.length === 0 && <div style={{ fontSize: 12, color: T.muted }}>Kho đầy đủ.</div>}
                   {lowStock.map((m) => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0" }}>
@@ -403,7 +403,7 @@ export function AdminApp({ db, setDb, showToast }) {
                 </Card>
               </div>
               <Card>
-                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Hoạt động theo vai trò</div>
+                <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Hoạt động theo vai trò</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
                   {roleActivity.map((r) => (
                     <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.soft, border: `1px solid ${T.lineHair}` }}>
@@ -645,7 +645,7 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Lệnh sản xuất thành phẩm</div>
+              <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>Lệnh sản xuất thành phẩm</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Nguyên vật liệu sẽ được <b>Giữ chỗ</b> khi tạo lệnh, và <b>Trừ kho</b> khi hoàn thành.</div>
             </div>
             <Btn variant="primary" onClick={() => setModal({ type: "newPo" })}>+ Lệnh mới</Btn>
@@ -718,7 +718,7 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Đơn mua hàng</div>
+              <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>Đơn mua hàng</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Nháp → Gửi NCC → Đang về → Nhận hàng. Chỉ khi <b>Nhận hàng</b> mới tạo lô mới và trừ ngân sách vào kho.</div>
             </div>
             <Btn variant="primary" onClick={() => setModal({ type: "newPO", data: null })}>+ Đơn mua mới</Btn>
@@ -777,7 +777,7 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Kiểm kê kho</div>
+              <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>Kiểm kê kho</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Chốt số liệu hệ thống khi tạo phiếu → nhập số thực tế → giải trình chênh lệch → hoàn tất sẽ tự sinh giao dịch điều chỉnh. Không sửa tay số tồn kho.</div>
             </div>
             <Btn variant="primary" onClick={() => setModal({ type: "newStocktake" })}>+ Tạo phiếu kiểm kê</Btn>
@@ -873,7 +873,7 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Kho nguyên liệu</div>
+              <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>Kho nguyên liệu</div>
               <div style={{ fontSize: 11, color: T.muted }}>{lowStock.length > 0 ? `${lowStock.length} món sắp hết` : "Đầy đủ"}</div>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", background: T.soft, padding: "8px 14px", border: `1px solid ${T.lineHair}` }}>
@@ -991,7 +991,7 @@ export function AdminApp({ db, setDb, showToast }) {
           
           <div style={{ marginTop: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15 }}>Lịch sử biến động kho</div>
+              <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15 }}>Lịch sử biến động kho</div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 10.5, color: T.muted }}>Lọc theo vai trò:</span>
                 <select
@@ -1080,7 +1080,7 @@ export function AdminApp({ db, setDb, showToast }) {
                       justifyContent: "center",
                       fontSize: 16,
                       fontWeight: 600,
-                      fontFamily: "'Cinzel',serif",
+                      fontFamily: "'Josefin Sans',sans-serif",
                       color: T.gold,
                     }}
                   >
@@ -1176,7 +1176,7 @@ export function AdminApp({ db, setDb, showToast }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Card>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15 }}>1. Nhập - Xuất - Tồn theo kỳ</div>
+                  <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15 }}>1. Nhập - Xuất - Tồn theo kỳ</div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} style={{ padding: "3px 8px", borderRadius: 0, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", outline: "none" }} />
                     <span style={{ fontSize: 11, color: T.muted }}>đến</span>
@@ -1214,7 +1214,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>2. Hàng sắp hết hạn</div>
+                <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>2. Hàng sắp hết hạn</div>
                 {expiringSoon.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.muted }}>Không có lô nào sắp/đã hết hạn.</div>
                 ) : (
@@ -1232,7 +1232,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>3. Chênh lệch BOM — định mức vs thực tế</div>
+                <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>3. Chênh lệch BOM — định mức vs thực tế</div>
                 {bomVariance.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.muted }}>Chưa có lệnh sản xuất nào hoàn thành để so sánh.</div>
                 ) : (
@@ -1270,7 +1270,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>4. Tỷ lệ hết hàng theo SKU</div>
+                <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>4. Tỷ lệ hết hàng theo SKU</div>
                 <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>
                   Snapshot tại thời điểm xem (app chưa lưu lịch sử tồn kho theo ngày nên chưa tính được % thời gian hết hàng thực sự).
                 </div>
@@ -1292,11 +1292,11 @@ export function AdminApp({ db, setDb, showToast }) {
 
       {tab === "logistics" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 18, marginBottom: 4 }}>Sandbox Tối Ưu Kho Hàng</div>
+          <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 18, marginBottom: 4 }}>Sandbox Tối Ưu Kho Hàng</div>
           <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>Mô phỏng trực quan các thuật toán quản lý chuỗi cung ứng (Inventory Management) dựa trên thống kê xác suất.</div>
 
           <Card>
-            <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>1. Tối ưu theo CSL (Continuous Review System)</div>
+            <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 12 }}>1. Tối ưu theo CSL (Continuous Review System)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
@@ -1379,7 +1379,7 @@ export function AdminApp({ db, setDb, showToast }) {
           </Card>
 
           <Card>
-            <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>2. Tối ưu theo mô hình Newsvendor (Hàng mùa vụ)</div>
+            <div style={{ fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 12 }}>2. Tối ưu theo mô hình Newsvendor (Hàng mùa vụ)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>

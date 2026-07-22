@@ -26,7 +26,7 @@ export function LandingPage({ setView }) {
         <div style={{ ...TYPE.hero, color: T.card, marginBottom: 24 }}>A Quiet Moment</div>
         <div
           style={{
-            fontFamily: "'Cinzel',serif",
+            fontFamily: "'Josefin Sans',sans-serif",
             fontSize: 13,
             fontStyle: "italic",
             fontWeight: 400,

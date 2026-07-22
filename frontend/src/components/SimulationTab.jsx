@@ -173,7 +173,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
   return (
     <div>
       <div style={{ ...TYPE.eyebrow, color: T.muted, marginBottom: 8 }}>SOLACE ATELIER</div>
-      <div style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 8 }}>Mô phỏng pha chế nến</div>
+      <div style={{ fontSize: 24, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, color: T.text, marginBottom: 8 }}>Mô phỏng pha chế nến</div>
       <div style={{ fontSize: 12, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 28 }}>
         Compose your candle at the SOLACE Atelier
       </div>
@@ -296,7 +296,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                     fontFamily: "inherit",
                   }}
                 >
-                  <div style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>{w.name}</div>
+                  <div style={{ fontSize: 15, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, color: T.text, marginBottom: 6 }}>{w.name}</div>
                   <div style={{ fontSize: 10.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted }}>{w.desc}</div>
                 </button>
               );
@@ -362,7 +362,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text }}>{f.name}</div>
+                    <div style={{ fontSize: 13, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, color: T.text }}>{f.name}</div>
                     <div style={{ ...TYPE.eyebrow, color: T.muted, marginTop: 4 }}>{f.family}</div>
                   </div>
                 </button>
@@ -556,7 +556,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
           </Card>
 
           <Card>
-            <div style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 12 }}>Diễn biến mùi hương</div>
+            <div style={{ fontSize: 14, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, color: T.text, marginBottom: 12 }}>Diễn biến mùi hương</div>
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={calc.scentData} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.lineHair} />
