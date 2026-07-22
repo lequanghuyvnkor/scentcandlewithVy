@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { T, ADMIN_PASSCODE } from "../data/theme";
-import { Btn, Input, Modal } from "./ui/Primitives";
+import { Btn, Input, Modal, Submark } from "./ui/Primitives";
 
 export function Header({ view, setView, identity, adminAuthed, onOpenLogin, onLogout }) {
-  const NAV = adminAuthed 
-    ? [{ id: "admin", label: "Quản lý" }]
+  const NAV = adminAuthed
+    ? [{ id: "admin", label: "ADMIN" }]
     : [
-        { id: "home", label: "Trang chủ" },
-        { id: "shop", label: "Cửa hàng" },
-        { id: "sim", label: "Mô phỏng" }
+        { id: "home", label: "HOME" },
+        { id: "shop", label: "COLLECTION" },
+        { id: "sim", label: "ATELIER" },
       ];
   return (
     <div
@@ -17,76 +17,66 @@ export function Header({ view, setView, identity, adminAuthed, onOpenLogin, onLo
         alignItems: "center",
         justifyContent: "space-between",
         maxWidth: 1040,
-        margin: "0 auto 20px",
-        padding: "14px 16px",
+        margin: "0 auto 32px",
+        padding: "16px 24px",
+        borderBottom: `1px solid ${T.line}`,
         flexWrap: "wrap",
-        gap: 10,
+        gap: 12,
       }}
     >
-      <div onClick={() => setView(adminAuthed ? "admin" : "home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-        <span style={{ fontSize: 24 }}>🕯️</span>
-        <span style={{ fontSize: 17, fontWeight: 700, color: T.pinkDeep }}>Candle Studio</span>
+      <div onClick={() => setView(adminAuthed ? "admin" : "home")} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+        <Submark onDark={false} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, letterSpacing: "0.45em", paddingLeft: "0.45em", color: T.text }}>
+            SOLACE
+          </span>
+          <span style={{ fontSize: 8, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 200, letterSpacing: "0.3em", textTransform: "uppercase", color: T.muted }}>
+            Bespoke · Saigon
+          </span>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-        {NAV.map((n) => (
-          <button
-            key={n.id}
-            onClick={() => setView(n.id)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: 999,
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: 13,
-              fontWeight: 700,
-              background: view === n.id ? T.pink : "transparent",
-              color: view === n.id ? "#fff" : T.text,
-            }}
-          >
-            {n.label}
-          </button>
-        ))}
+        {NAV.map((n) => {
+          const active = view === n.id;
+          return (
+            <button
+              key={n.id}
+              onClick={() => setView(n.id)}
+              style={{
+                fontFamily: "'Josefin Sans',sans-serif",
+                fontSize: 10,
+                fontWeight: 300,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                padding: "6px 14px",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                color: active ? T.gold : T.muted,
+                borderBottom: active ? `1px solid ${T.gold}` : "1px solid transparent",
+                borderRadius: 0,
+              }}
+            >
+              {n.label}
+            </button>
+          );
+        })}
       </div>
 
       {identity || adminAuthed ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12.5, color: T.muted }}>{adminAuthed ? "🔑 Quản lý" : `👋 ${identity.name}`}</span>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 999,
-              border: `2px solid ${T.line}`,
-              background: "#fff",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: 12,
-              color: T.muted,
-              fontWeight: 700,
-            }}
-          >
-            Đăng xuất
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 10, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, letterSpacing: "0.08em", color: T.muted }}>
+            {adminAuthed ? "ADMIN" : `— ${identity.name}`}
+          </span>
+          <Btn small onClick={onLogout}>
+            SIGN OUT
+          </Btn>
         </div>
       ) : (
-        <button
-          onClick={onOpenLogin}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 999,
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            fontSize: 13,
-            fontWeight: 700,
-            background: T.pinkSoft,
-            color: T.pinkDeep,
-          }}
-        >
-          Đăng nhập
-        </button>
+        <Btn small onClick={onOpenLogin}>
+          SIGN IN
+        </Btn>
       )}
     </div>
   );
@@ -100,67 +90,59 @@ export function LoginModal({ onClose, onCustomer, onAdmin }) {
   const [error, setError] = useState("");
 
   return (
-    <Modal title="Đăng nhập" onClose={onClose}>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-        <button
-          onClick={() => setTab("customer")}
-          style={{
-            flex: 1,
-            padding: "8px",
-            borderRadius: 12,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            fontSize: 12.5,
-            fontWeight: 700,
-            border: `2px solid ${tab === "customer" ? T.pink : T.line}`,
-            background: tab === "customer" ? T.pinkSoft : "#fff",
-            color: tab === "customer" ? T.pinkDeep : T.muted,
-          }}
-        >
-          🛍️ Khách hàng
-        </button>
-        <button
-          onClick={() => setTab("admin")}
-          style={{
-            flex: 1,
-            padding: "8px",
-            borderRadius: 12,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            fontSize: 12.5,
-            fontWeight: 700,
-            border: `2px solid ${tab === "admin" ? T.pink : T.line}`,
-            background: tab === "admin" ? T.pinkSoft : "#fff",
-            color: tab === "admin" ? T.pinkDeep : T.muted,
-          }}
-        >
-          🔑 Quản lý
-        </button>
+    <Modal title="SIGN IN" onClose={onClose}>
+      <div style={{ display: "flex", gap: 24, marginBottom: 24, borderBottom: `1px solid ${T.line}` }}>
+        {[
+          { id: "customer", label: "CLIENT" },
+          { id: "admin", label: "ADMIN" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "0 0 10px",
+              cursor: "pointer",
+              fontFamily: "'Josefin Sans',sans-serif",
+              fontSize: 10,
+              fontWeight: 300,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              border: "none",
+              borderBottom: tab === t.id ? `1px solid ${T.gold}` : "1px solid transparent",
+              background: "transparent",
+              color: tab === t.id ? T.text : T.muted,
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === "customer" ? (
         <>
           <Input label="Tên của bạn" value={name} onChange={setName} placeholder="VD: Chị Hoa" />
           <Input label="Số điện thoại" value={phone} onChange={setPhone} placeholder="09xx xxx xxx" />
-          <Btn primary disabled={!name.trim()} style={{ width: "100%" }} onClick={() => onCustomer({ name: name.trim(), phone: phone.trim() })}>
-            Vào cửa hàng 🌸
+          <Btn variant="primary" disabled={!name.trim()} style={{ width: "100%" }} onClick={() => onCustomer({ name: name.trim(), phone: phone.trim() })}>
+            Vào cửa hàng
           </Btn>
         </>
       ) : (
         <>
           <Input label="Mật khẩu" type="password" value={passcode} onChange={setPasscode} placeholder="Nhập mật khẩu" />
-          {error && <div style={{ fontSize: 11.5, color: T.redDeep, marginBottom: 8 }}>{error}</div>}
+          {error && <div style={{ fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.redDeep, marginBottom: 12 }}>{error}</div>}
           <Btn
-            primary
+            variant="primary"
             style={{ width: "100%" }}
             onClick={() => {
               if (passcode === ADMIN_PASSCODE) onAdmin();
-              else setError("Mật khẩu không đúng 🥺");
+              else setError("Mật khẩu không đúng.");
             }}
           >
-            Đăng nhập ✓
+            Đăng nhập
           </Btn>
-          <div style={{ fontSize: 10.5, color: T.muted, marginTop: 10, textAlign: "center" }}>Gợi ý demo: {ADMIN_PASSCODE}</div>
+          <div style={{ fontSize: 10, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginTop: 14, textAlign: "center" }}>
+            Demo passcode: {ADMIN_PASSCODE}
+          </div>
         </>
       )}
     </Modal>

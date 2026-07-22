@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { T } from "../data/theme";
+import { T, TYPE } from "../data/theme";
 import { RECIPES, BOM, LINES, STATUSES_DEF, WAX, SALVAGE_DEFAULTS } from "../data/recipes";
 import { Card, Btn, Input, Badge, Modal } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
@@ -122,7 +122,7 @@ export function AdminApp({ db, setDb, showToast }) {
         stocktakes: d.stocktakes.map((s) => (s.id === stId ? { ...s, status: "completed", completedDate: today } : s)),
       };
     });
-    showToast("Đã hoàn tất kiểm kê và tạo giao dịch điều chỉnh! ✅");
+    showToast("Đã hoàn tất kiểm kê và tạo giao dịch điều chỉnh!");
   };
 
   const moveOrder = (orderId, newStatus) => {
@@ -138,7 +138,7 @@ export function AdminApp({ db, setDb, showToast }) {
       if (newStatus === "producing" && !order.deducted) {
         const missing = checkStockForItems(order.items, d.materials, d.products, d.productBatches);
         if (missing.length) {
-          showToast(`Thiếu tồn kho: ${missing.map((m) => `${m.name} (cần ${m.need}${m.unit}, còn ${m.have}${m.unit})`).join(", ")} 🥺`, false);
+          showToast(`Thiếu tồn kho: ${missing.map((m) => `${m.name} (cần ${m.need}${m.unit}, còn ${m.have}${m.unit})`).join(", ")}`, false);
           return d;
         }
         const matNeed = materialsNeededForItems(order.items);
@@ -163,7 +163,7 @@ export function AdminApp({ db, setDb, showToast }) {
         }
         products = syncProductQtyFromBatches(d.products, pBatches);
         deducted = true;
-        showToast(`Đã xuất kho cho ${orderId} — bắt đầu đóng gói! 📦`);
+        showToast(`Đã xuất kho cho ${orderId} — bắt đầu đóng gói!`);
       }
 
       if (order.status === "producing" && ["new", "confirmed"].includes(newStatus) && order.deducted) {
@@ -188,7 +188,7 @@ export function AdminApp({ db, setDb, showToast }) {
         }
         products = syncProductQtyFromBatches(d.products, pBatches);
         deducted = false;
-        showToast(`Đã hoàn kho cho ${orderId} 🔄`);
+        showToast(`Đã hoàn kho cho ${orderId}`);
       }
       return { ...d, materials, products, transactions, nextTxNum, batches, nextBatchNum, productBatches: pBatches, nextPBatchNum, orders: d.orders.map((o) => (o.id === orderId ? { ...o, status: newStatus, deducted } : o)) };
     });
@@ -252,52 +252,47 @@ export function AdminApp({ db, setDb, showToast }) {
     { id: "reports", emoji: "📊", label: "Báo cáo" },
   ];
 
-  const ttStyle = { background: T.card, border: `1.5px solid ${T.line}`, borderRadius: 12, fontSize: 11, color: T.text };
+  const ttStyle = { background: T.card, border: `1px solid ${T.line}`, borderRadius: 0, fontSize: 11, color: T.text };
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ background: T.dark, padding: "12px 20px", borderRadius: 2, display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap", marginBottom: 28 }}>
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              padding: tab === t.id ? "8px 18px" : "8px 13px",
-              borderRadius: 999,
-              border: "none",
+              padding: "8px 20px",
+              background: "transparent",
+              border: tab === t.id ? `1px solid ${T.gold}` : "1px solid transparent",
+              borderRadius: 0,
               cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: 12.5,
-              fontWeight: 700,
-              background: tab === t.id ? T.pink : "#fff",
-              color: tab === t.id ? "#fff" : T.muted,
-              boxShadow: tab === t.id ? "0 3px 10px rgba(143,108,59,0.35)" : `inset 0 0 0 1.5px ${T.line}`,
+              fontFamily: "'Josefin Sans',sans-serif",
+              fontSize: 10,
+              fontWeight: 300,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: tab === t.id ? T.gold : `${T.card}55`,
             }}
           >
-            {t.emoji} {tab === t.id && t.label}
-            {t.id === "inventory" && lowStock.length > 0 && (
-              <span style={{ marginLeft: 5, background: T.red, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{lowStock.length}</span>
-            )}
-            {t.id === "purchasing" && activePOs.length > 0 && (
-              <span style={{ marginLeft: 5, background: T.blueDeep, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{activePOs.length}</span>
-            )}
-            {t.id === "stocktake" && activeSTs.length > 0 && (
-              <span style={{ marginLeft: 5, background: T.yellowDeep, color: "#fff", borderRadius: 99, fontSize: 9.5, padding: "1px 6px" }}>{activeSTs.length}</span>
-            )}
+            {t.label}
+            {t.id === "inventory" && lowStock.length > 0 && <span style={{ marginLeft: 8, color: T.gold, fontSize: 9 }}>{lowStock.length}</span>}
+            {t.id === "purchasing" && activePOs.length > 0 && <span style={{ marginLeft: 8, color: T.gold, fontSize: 9 }}>{activePOs.length}</span>}
+            {t.id === "stocktake" && activeSTs.length > 0 && <span style={{ marginLeft: 8, color: T.gold, fontSize: 9 }}>{activeSTs.length}</span>}
           </button>
         ))}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 10.5, color: T.muted }}>Đang thao tác với vai trò:</span>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <span style={{ ...TYPE.label, fontSize: 10, color: T.muted }}>Đang thao tác với vai trò:</span>
         <select
           value={db.currentRole || "quanly"}
           onChange={(e) => setDb((d) => ({ ...d, currentRole: e.target.value }))}
           title="Chỉ để gắn nhãn cho sổ giao dịch/báo cáo — không giới hạn thao tác nào"
-          style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "inherit", color: T.text, background: "#fff" }}
+          style={{ padding: "3px 8px", borderRadius: 0, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", color: T.text, background: T.card }}
         >
           {ROLES.map((r) => (
-            <option key={r.id} value={r.id}>{r.emoji} {r.label}</option>
+            <option key={r.id} value={r.id}>{r.label}</option>
           ))}
         </select>
       </div>
@@ -333,33 +328,32 @@ export function AdminApp({ db, setDb, showToast }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
                 {[
-                  { emoji: "💰", label: "Doanh thu", val: fmtVND(revenue) },
-                  { emoji: "💵", label: "Vốn đọng kho", val: fmtVND(Math.round(inventoryCapital)) },
-                  { emoji: "📦", label: "Đơn đang chạy", val: activeOrders },
-                  { emoji: "🥺", label: "Sắp hết", val: lowStock.length },
+                  { label: "Doanh thu", val: fmtVND(revenue) },
+                  { label: "Vốn đọng kho", val: fmtVND(Math.round(inventoryCapital)) },
+                  { label: "Đơn đang chạy", val: activeOrders },
+                  { label: "Sắp hết", val: lowStock.length },
                 ].map((s) => (
                   <Card key={s.label} style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 22 }}>{s.emoji}</div>
-                    <div style={{ fontSize: 17, fontWeight: 700, marginTop: 4 }}>{s.val}</div>
-                    <div style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>{s.label}</div>
+                    <div style={{ ...TYPE.stat, marginTop: 4 }}>{s.val}</div>
+                    <div style={{ ...TYPE.label, fontSize: 10, color: T.muted, marginTop: 6 }}>{s.label}</div>
                   </Card>
                 ))}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
                 <Card>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Doanh thu 7 ngày (nghìn đ) 📈</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 14 }}>Doanh thu 7 ngày (nghìn đ)</div>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={days} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={T.line} />
                       <XAxis dataKey="day" tick={{ fontSize: 10, fill: T.muted }} />
                       <YAxis tick={{ fontSize: 10, fill: T.muted }} />
                       <Tooltip contentStyle={ttStyle} />
-                      <Bar dataKey="Doanh thu" fill={T.pink} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="Doanh thu" fill={T.pink} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Card>
                 <Card>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Logistics Đơn hàng 🚚</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 14 }}>Logistics đơn hàng</div>
                   <ResponsiveContainer width="100%" height={140}>
                     <PieChart>
                       <Pie data={STATUSES.map(st => ({ name: st.label, value: db.orders.filter(o => o.status === st.id).length, color: st.deep })).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2}>
@@ -372,8 +366,8 @@ export function AdminApp({ db, setDb, showToast }) {
                   </ResponsiveContainer>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 6 }}>
                     {STATUSES.map(st => ({ name: st.label, value: db.orders.filter(o => o.status === st.id).length, color: st.deep })).filter(d => d.value > 0).map(d => (
-                      <div key={d.name} style={{ fontSize: 10, color: T.text, display: "flex", alignItems: "center", gap: 4, fontWeight: 600 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color }}></div> {d.name} ({d.value})
+                      <div key={d.name} style={{ ...TYPE.label, fontSize: 9, color: T.text, display: "flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 0, background: d.color }}></div> {d.name} ({d.value})
                       </div>
                     ))}
                   </div>
@@ -381,28 +375,26 @@ export function AdminApp({ db, setDb, showToast }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Card>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Bán chạy nhất 🏆</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Bán chạy nhất</div>
                   {topProducts.map((p, i) => (
-                    <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < topProducts.length - 1 ? `1px dashed ${T.line}` : "none" }}>
-                      <span style={{ fontSize: 17 }}>{p.emoji}</span>
+                    <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < topProducts.length - 1 ? `1px dashed ${T.lineHair}` : "none" }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 700 }}>{p.name}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 400, fontFamily: "'Josefin Sans',sans-serif" }}>{p.name}</div>
                         <div style={{ fontSize: 10.5, color: T.muted }}>Lãi {fmtVND(p.profit)}</div>
                       </div>
-                      <Badge color={T.pinkSoft} deep={T.pinkDeep}>
+                      <Badge variant="gold">
                         {p.sold} cây
                       </Badge>
                     </div>
                   ))}
                 </Card>
                 <Card>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Cần nhập thêm 🧺</div>
-                  {lowStock.length === 0 && <div style={{ fontSize: 12, color: T.muted }}>Kho đầy đủ! 💗</div>}
+                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Cần nhập thêm</div>
+                  {lowStock.length === 0 && <div style={{ fontSize: 12, color: T.muted }}>Kho đầy đủ.</div>}
                   {lowStock.map((m) => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0" }}>
-                      <span style={{ fontSize: 16 }}>{m.emoji}</span>
-                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>{m.name}</div>
-                      <Badge color="#FBE3DA" deep={T.redDeep}>
+                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 400, fontFamily: "'Josefin Sans',sans-serif" }}>{m.name}</div>
+                      <Badge variant="danger">
                         còn {m.qty}
                         {m.unit}
                       </Badge>
@@ -411,18 +403,17 @@ export function AdminApp({ db, setDb, showToast }) {
                 </Card>
               </div>
               <Card>
-                <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>Hoạt động theo vai trò 👤</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>Hoạt động theo vai trò</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
                   {roleActivity.map((r) => (
-                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.soft, borderRadius: 10 }}>
-                      <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.soft, border: `1px solid ${T.lineHair}` }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11.5, fontWeight: 700 }}>{r.label}</div>
+                        <div style={{ fontSize: 11.5, fontWeight: 400, fontFamily: "'Josefin Sans',sans-serif" }}>{r.label}</div>
                         <div style={{ fontSize: 10, color: T.muted }}>
                           {r.lastDate ? `Gần nhất: ${new Date(r.lastDate).toLocaleDateString("vi-VN")}` : "Chưa có hoạt động"}
                         </div>
                       </div>
-                      <Badge color={T.pinkSoft} deep={T.pinkDeep}>{r.count} giao dịch</Badge>
+                      <Badge variant="gold">{r.count} giao dịch</Badge>
                     </div>
                   ))}
                 </div>
@@ -434,7 +425,7 @@ export function AdminApp({ db, setDb, showToast }) {
       {tab === "orders" && (
         <>
           <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12, textAlign: "center" }}>
-            📌 Đơn hàng được tạo tự động từ Cửa hàng &amp; Mô phỏng — quản lý chỉ cần di chuyển trạng thái
+            Đơn hàng được tạo tự động từ Cửa hàng &amp; Mô phỏng — quản lý chỉ cần di chuyển trạng thái
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, overflowX: "auto" }}>
             {STATUSES.map((st, si) => {
@@ -448,26 +439,26 @@ export function AdminApp({ db, setDb, showToast }) {
                       justifyContent: "center",
                       gap: 5,
                       background: st.color,
-                      borderRadius: 12,
-                      padding: "7px 4px",
+                      borderRadius: 0,
+                      padding: "8px 4px",
                       marginBottom: 8,
-                      fontSize: 11.5,
-                      fontWeight: 700,
+                      ...TYPE.label,
+                      fontSize: 9.5,
                       color: st.deep,
                     }}
                   >
-                    {st.emoji} {st.label} <span style={{ opacity: 0.7 }}>({orders.length})</span>
+                    {st.label} <span style={{ opacity: 0.7 }}>({orders.length})</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {orders.map((o) => {
                       const cust = db.customers.find((c) => c.id === o.customerId);
                       return (
-                        <Card key={o.id} style={{ padding: "10px 11px", borderRadius: 14 }}>
+                        <Card key={o.id} style={{ padding: "12px 14px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 11.5, fontWeight: 700, color: T.pinkDeep }}>{o.id}</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 600, color: T.pinkDeep }}>{o.id}</span>
                             {o.deducted && (
-                              <span title="Đã trừ kho" style={{ fontSize: 10 }}>
-                                ✂️
+                              <span title="Đã trừ kho" style={{ fontSize: 9, color: T.muted }}>
+                                ĐÃ TRỪ
                               </span>
                             )}
                           </div>
@@ -475,12 +466,12 @@ export function AdminApp({ db, setDb, showToast }) {
                           {o.items.map((it, ii) => {
                             const disp = itemDisplay(it);
                             return (
-                              <div key={ii} style={{ fontSize: 10.5, color: T.muted }}>
-                                {disp.emoji} {disp.name} ×{it.qty}
+                              <div key={ii} style={{ fontSize: 10.5, color: T.muted, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300 }}>
+                                {disp.name} ×{it.qty}
                               </div>
                             );
                           })}
-                          <div style={{ fontSize: 11.5, fontWeight: 700, margin: "5px 0" }}>{fmtVND(orderTotal(o, db.products))}</div>
+                          <div style={{ fontSize: 11.5, fontWeight: 600, margin: "5px 0" }}>{fmtVND(orderTotal(o, db.products))}</div>
                           <div style={{ display: "flex", gap: 4 }}>
                             {si > 0 && (
                               <Btn small onClick={() => moveOrder(o.id, STATUSES[si - 1].id)} style={{ padding: "4px 10px", fontSize: 11 }}>
@@ -488,27 +479,27 @@ export function AdminApp({ db, setDb, showToast }) {
                               </Btn>
                             )}
                             {si < STATUSES.length - 1 && (
-                              <Btn small primary onClick={() => moveOrder(o.id, STATUSES[si + 1].id)} style={{ padding: "4px 10px", fontSize: 11, flex: 1 }}>
-                                {STATUSES[si + 1].emoji} →
+                              <Btn small variant="primary" onClick={() => moveOrder(o.id, STATUSES[si + 1].id)} style={{ padding: "4px 10px", fontSize: 11, flex: 1 }}>
+                                →
                               </Btn>
                             )}
                           </div>
                           {o.status === "done" && o.items.some((it) => it.type === "catalog") && (
                             <Btn small onClick={() => setModal({ type: "customerReturn", data: o.id })} style={{ width: "100%", marginTop: 4, fontSize: 10.5 }}>
-                              ↩️ Khách trả hàng
+                              Khách trả hàng
                             </Btn>
                           )}
                         </Card>
                       );
                     })}
-                    {orders.length === 0 && <div style={{ fontSize: 10.5, color: "#D6C6A0", textAlign: "center", padding: "14px 0" }}>trống ✿</div>}
+                    {orders.length === 0 && <div style={{ fontSize: 10.5, color: T.muted, textAlign: "center", padding: "14px 0" }}>trống</div>}
                   </div>
                 </div>
               );
             })}
           </div>
           <div style={{ fontSize: 11, color: T.muted, marginTop: 12, textAlign: "center" }}>
-            💡 Chuyển đơn sang <b>Sản xuất</b> sẽ tự động trừ kho · lùi lại sẽ hoàn kho
+            Chuyển đơn sang <b>Sản xuất</b> sẽ tự động trừ kho · lùi lại sẽ hoàn kho
           </div>
         </>
       )}
@@ -517,20 +508,20 @@ export function AdminApp({ db, setDb, showToast }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <Card>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Giá thanh lý mặc định (F15) ⚙️</div>
+              <div style={{ fontSize: 13, fontWeight: 600, fontFamily: "'Josefin Sans',sans-serif" }}>Giá thanh lý mặc định</div>
               <Btn small onClick={() => setModal({ type: "salvageConfig" })}>Chỉnh mặc định</Btn>
             </div>
             <div style={{ fontSize: 11, color: T.muted }}>
               Cấp hệ thống: <b style={{ color: T.text }}>{Math.round((db.salvageConfig?.systemPct ?? SALVAGE_DEFAULTS.systemPct) * 100)}%</b> giá vốn
               {" · "}
-              {LINES.map((l) => `${l.emoji} ${Math.round((db.salvageConfig?.byLine?.[l.id] ?? SALVAGE_DEFAULTS.byLine[l.id]) * 100)}%`).join(" · ")}
+              {LINES.map((l) => `${l.name} ${Math.round((db.salvageConfig?.byLine?.[l.id] ?? SALVAGE_DEFAULTS.byLine[l.id]) * 100)}%`).join(" · ")}
               {" · "}Phí bán mặc định <b style={{ color: T.text }}>{Math.round((db.salvageConfig?.defaultFeesPct ?? SALVAGE_DEFAULTS.defaultFeesPct) * 100)}%</b>
             </div>
           </Card>
           {LINES.map((line) => (
             <div key={line.id}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 10 }}>
-                {line.emoji} {line.name}
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>
+                {line.name}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
                 {db.products
@@ -561,42 +552,42 @@ export function AdminApp({ db, setDb, showToast }) {
                         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
                           <JarCandle jarTypeId={r.jarType} rgb={WAX[r.wax].base} lit={false} size={68} />
                         </div>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, textAlign: "center" }}>
-                          {r.emoji} {r.name}
+                        <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 14, textAlign: "center" }}>
+                          {r.name}
                         </div>
                         <div style={{ fontSize: 10.5, color: T.muted, textAlign: "center", marginBottom: 8 }}>{r.frags.map(([n, ml]) => `${n} ${ml}ml`).join(" + ")}</div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: T.pinkDeep }}>{fmtVND(p.price)}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: T.pinkDeep }}>{fmtVND(p.price)}</div>
                             <div style={{ fontSize: 9.5, color: T.muted }}>
                               vốn {fmtVND(p.cost)} · lãi {Math.round(((p.price - p.cost) / p.price) * 100)}%
                             </div>
                           </div>
-                          <Badge color={canMake > 5 ? "#E4F0D8" : "#FBE3DA"} deep={canMake > 5 ? T.greenDeep : T.redDeep}>
+                          <Badge variant={canMake > 5 ? "success" : "danger"}>
                             làm thêm {canMake}
                           </Badge>
                         </div>
-                        <div style={{ background: T.soft, borderRadius: 8, padding: "8px 10px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ background: T.soft, border: `1px solid ${T.lineHair}`, padding: "10px 12px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div style={{ fontSize: 11, color: T.muted }}>Tồn sẵn bán:</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{inventoryPos[p.id]?.available || 0} cây</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{inventoryPos[p.id]?.available || 0} cây</div>
                           </div>
                           {p.isSeasonal && (() => {
                             const stats = demandStats[p.id] || { D: 1, sigma_D: 1 };
                             const targetD = stats.D * 30; // Dự báo mùa 30 ngày
                             const stdD = stats.sigma_D * Math.sqrt(30);
                             const optimalQ = Math.max(0, Math.ceil(targetD + NORMSINV(optCSL) * stdD));
-                            
+
                             return (
                               <>
-                                <div style={{ height: 1, background: T.line }} />
+                                <div style={{ height: 1, background: T.lineHair }} />
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                   <div style={{ fontSize: 11, color: T.muted }} title="Critical Ratio">Tỉ lệ phục vụ (CR*)</div>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: T.blueDeep }}>{(optCSL * 100).toFixed(1)}%</div>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: T.blueDeep }}>{(optCSL * 100).toFixed(1)}%</div>
                                 </div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                   <div style={{ fontSize: 11, color: T.muted }} title="Lượng làm tối ưu = Nhu cầu + Z*Độ lệch chuẩn">Nên làm (Q*)</div>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: T.pinkDeep }}>{optimalQ} cây</div>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: T.pinkDeep }}>{optimalQ} cây</div>
                                 </div>
                               </>
                             );
@@ -604,35 +595,35 @@ export function AdminApp({ db, setDb, showToast }) {
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
                           <Btn small onClick={() => setModal({ type: "editPrice", data: p.id })} style={{ flex: 1 }}>
-                            ✏️ Sửa giá
+                            Sửa giá
                           </Btn>
-                          <Btn small onClick={() => setExpandedProd(isExpandedProd ? null : p.id)} style={pAlertCount > 0 ? { background: "#FBE3DA", color: T.redDeep } : {}}>
-                            📦 {pBatchesForP.length}{pAlertCount > 0 ? ` ⚠️${pAlertCount}` : ""}
+                          <Btn small onClick={() => setExpandedProd(isExpandedProd ? null : p.id)} style={pAlertCount > 0 ? { color: T.redDeep, borderColor: T.redDeep } : {}}>
+                            {pBatchesForP.length}{pAlertCount > 0 ? ` · ${pAlertCount}` : ""}
                           </Btn>
                         </div>
                         {isExpandedProd && (
-                          <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 12px", border: `1px dashed ${T.line}` }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6 }}>Trạng thái tồn kho (F12)</div>
+                          <div style={{ marginTop: 10, background: T.card, padding: "10px 12px", border: `1px dashed ${T.line}` }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: T.muted, marginBottom: 6 }}>Trạng thái tồn kho</div>
                             {PRODUCT_BATCH_STATUSES.map((s) => (
                               <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, padding: "2px 0" }}>
-                                <span>{s.emoji} {s.label}</span>
+                                <span>{s.label}</span>
                                 <b>{(statusBreakdown[s.id] || 0).toLocaleString("vi-VN")} cây</b>
                               </div>
                             ))}
-                            {pBatchesForP.length > 0 && <div style={{ height: 1, background: T.line, margin: "6px 0" }} />}
+                            {pBatchesForP.length > 0 && <div style={{ height: 1, background: T.lineHair, margin: "6px 0" }} />}
                             {pBatchesForP.map((b) => {
                               const est = batchStatus(b.expiryDate);
                               return (
                                 <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 10 }}>
-                                  <span style={{ fontWeight: 700, minWidth: 60 }}>{b.id}</span>
+                                  <span style={{ fontWeight: 600, minWidth: 60 }}>{b.id}</span>
                                   <span style={{ color: T.muted, flex: 1 }}>{b.remainingQty.toLocaleString("vi-VN")} cây{est.level !== "none" ? ` · ${est.label}` : ""}</span>
                                   <select
                                     value={b.status}
                                     onChange={(e) => setDb((d) => ({ ...d, productBatches: d.productBatches.map((x) => (x.id === b.id ? { ...x, status: e.target.value } : x)) }))}
-                                    style={{ fontSize: 9.5, padding: "2px 4px", borderRadius: 6, border: `1px solid ${T.line}`, outline: "none", fontFamily: "inherit" }}
+                                    style={{ fontSize: 9.5, padding: "2px 4px", borderRadius: 0, border: `1px solid ${T.line}`, outline: "none", fontFamily: "'Josefin Sans',sans-serif" }}
                                   >
                                     {PRODUCT_BATCH_STATUSES.map((s) => (
-                                      <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+                                      <option key={s.id} value={s.id}>{s.label}</option>
                                     ))}
                                   </select>
                                 </div>
@@ -654,26 +645,25 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Lệnh sản xuất thành phẩm 🏭</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Lệnh sản xuất thành phẩm</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Nguyên vật liệu sẽ được <b>Giữ chỗ</b> khi tạo lệnh, và <b>Trừ kho</b> khi hoàn thành.</div>
             </div>
-            <Btn primary onClick={() => setModal({ type: "newPo" })}>+ Lệnh mới</Btn>
+            <Btn variant="primary" onClick={() => setModal({ type: "newPo" })}>+ Lệnh mới</Btn>
           </div>
-          
+
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {(!db.productionOrders || db.productionOrders.length === 0) && (
-              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có lệnh sản xuất nào 📋</div>
+              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có lệnh sản xuất nào</div>
             )}
             {(db.productionOrders || []).map((po) => {
               const r = RECIPES[po.productId];
               const isDraft = po.status === "draft";
               return (
-                <div key={po.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "#fff", borderRadius: 12, border: `1px solid ${T.line}` }}>
-                  <div style={{ fontSize: 28 }}>{r?.emoji}</div>
+                <div key={po.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: T.card, borderRadius: 0, border: `1px solid ${T.line}` }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{po.id} — {r?.name}</div>
-                      <Badge color={isDraft ? T.yellow : T.green} deep={isDraft ? T.yellowDeep : T.greenDeep}>{isDraft ? "Đang chờ" : "Đã xong"}</Badge>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{po.id} — {r?.name}</div>
+                      <Badge variant={isDraft ? "gold" : "success"}>{isDraft ? "Đang chờ" : "Đã xong"}</Badge>
                     </div>
                     <div style={{ fontSize: 11.5, color: T.muted, display: "flex", gap: 16 }}>
                       <span>Sản xuất: <b style={{ color: T.text }}>{po.qty} cây</b></span>
@@ -681,7 +671,7 @@ export function AdminApp({ db, setDb, showToast }) {
                     </div>
                   </div>
                   {isDraft && (
-                    <Btn small primary onClick={() => {
+                    <Btn small variant="primary" onClick={() => {
                       setDb(d => {
                         let txs = [...(d.transactions || [])];
                         let nextTx = d.nextTxNum || 1;
@@ -714,7 +704,7 @@ export function AdminApp({ db, setDb, showToast }) {
                           productionOrders: d.productionOrders.map(x => x.id === po.id ? { ...x, status: "done" } : x)
                         };
                       });
-                      showToast(`Hoàn tất sản xuất ${po.id}! 🕯️`);
+                      showToast(`Hoàn tất sản xuất ${po.id}!`);
                     }}>Hoàn thành</Btn>
                   )}
                 </div>
@@ -728,15 +718,15 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Đơn mua hàng 🛒</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Đơn mua hàng</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Nháp → Gửi NCC → Đang về → Nhận hàng. Chỉ khi <b>Nhận hàng</b> mới tạo lô mới và trừ ngân sách vào kho.</div>
             </div>
-            <Btn primary onClick={() => setModal({ type: "newPO", data: null })}>+ Đơn mua mới</Btn>
+            <Btn variant="primary" onClick={() => setModal({ type: "newPO", data: null })}>+ Đơn mua mới</Btn>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {(!db.purchaseOrders || db.purchaseOrders.length === 0) && (
-              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có đơn mua hàng nào 📋</div>
+              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có đơn mua hàng nào</div>
             )}
             {[...(db.purchaseOrders || [])].reverse().map((po) => {
               const material = db.materials.find((m) => m.id === po.materialId);
@@ -752,12 +742,11 @@ export function AdminApp({ db, setDb, showToast }) {
               };
 
               return (
-                <div key={po.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "#fff", borderRadius: 12, border: `1px solid ${T.line}` }}>
-                  <div style={{ fontSize: 28 }}>{material?.emoji}</div>
+                <div key={po.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: T.card, borderRadius: 0, border: `1px solid ${T.line}` }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap", gap: 6 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{po.id} — {material?.name} ×{po.qty.toLocaleString("vi-VN")}{material?.unit}</div>
-                      <Badge color={st?.color} deep={st?.deep}>{st?.emoji} {st?.label}</Badge>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{po.id} — {material?.name} ×{po.qty.toLocaleString("vi-VN")}{material?.unit}</div>
+                      <Badge variant={st?.id === "received" ? "success" : st?.id === "cancelled" ? "danger" : st?.id === "in_transit" ? "gold" : "default"}>{st?.label}</Badge>
                     </div>
                     <div style={{ fontSize: 11, color: T.muted, display: "flex", gap: 14, flexWrap: "wrap" }}>
                       <span>NCC: <b style={{ color: T.text }}>{supplier?.name ?? "—"}</b></span>
@@ -768,13 +757,13 @@ export function AdminApp({ db, setDb, showToast }) {
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     {nextSt && (
-                      <Btn small primary onClick={() => advance(nextStatus)}>{nextSt.emoji} {nextSt.label}</Btn>
+                      <Btn small variant="primary" onClick={() => advance(nextStatus)}>{nextSt.label}</Btn>
                     )}
                     {po.status === "in_transit" && (
-                      <Btn small primary onClick={() => setModal({ type: "receivePO", data: po.id })}>📦 Nhận hàng</Btn>
+                      <Btn small variant="primary" onClick={() => setModal({ type: "receivePO", data: po.id })}>Nhận hàng</Btn>
                     )}
                     {canCancel && (
-                      <Btn small danger onClick={() => advance("cancelled")}>Huỷ</Btn>
+                      <Btn small variant="danger" onClick={() => advance("cancelled")}>Huỷ</Btn>
                     )}
                   </div>
                 </div>
@@ -788,15 +777,15 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Kiểm kê kho 📋</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Kiểm kê kho</div>
               <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Chốt số liệu hệ thống khi tạo phiếu → nhập số thực tế → giải trình chênh lệch → hoàn tất sẽ tự sinh giao dịch điều chỉnh. Không sửa tay số tồn kho.</div>
             </div>
-            <Btn primary onClick={() => setModal({ type: "newStocktake" })}>+ Tạo phiếu kiểm kê</Btn>
+            <Btn variant="primary" onClick={() => setModal({ type: "newStocktake" })}>+ Tạo phiếu kiểm kê</Btn>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {(!db.stocktakes || db.stocktakes.length === 0) && (
-              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có phiếu kiểm kê nào 📋</div>
+              <div style={{ textAlign: "center", padding: "20px 0", color: T.muted, fontSize: 12 }}>Chưa có phiếu kiểm kê nào</div>
             )}
             {[...(db.stocktakes || [])].reverse().map((st) => {
               const isExpanded = expandedST === st.id;
@@ -806,10 +795,10 @@ export function AdminApp({ db, setDb, showToast }) {
               const canComplete = st.status === "counting" && pendingCount === 0 && needsNoteCount === 0;
 
               return (
-                <div key={st.id} style={{ background: "#fff", borderRadius: 12, border: `1px solid ${T.line}`, padding: "12px 14px" }}>
+                <div key={st.id} style={{ background: T.card, borderRadius: 0, border: `1px solid ${T.line}`, padding: "12px 14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{st.id} — {st.lines.length} nguyên vật liệu</div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{st.id} — {st.lines.length} nguyên vật liệu</div>
                       <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
                         Tạo ngày {new Date(st.createdDate).toLocaleDateString("vi-VN")}
                         {st.status === "completed" && ` · Hoàn tất ${new Date(st.completedDate).toLocaleDateString("vi-VN")} · ${diffLines.length} dòng điều chỉnh`}
@@ -818,22 +807,22 @@ export function AdminApp({ db, setDb, showToast }) {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <Badge color={st.status === "completed" ? "#E4F0D8" : T.yellow} deep={st.status === "completed" ? T.greenDeep : T.yellowDeep}>
-                        {st.status === "completed" ? "✅ Hoàn tất" : "🔎 Đang đếm"}
+                      <Badge variant={st.status === "completed" ? "success" : "gold"}>
+                        {st.status === "completed" ? "Hoàn tất" : "Đang đếm"}
                       </Badge>
                       <Btn small onClick={() => setExpandedST(isExpanded ? null : st.id)}>{isExpanded ? "Thu gọn" : "Xem chi tiết"}</Btn>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div style={{ marginTop: 12, background: T.soft, borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ marginTop: 12, background: T.soft, borderRadius: 0, padding: "10px 12px" }}>
                       {st.lines.map((l) => {
                         const material = db.materials.find((m) => m.id === l.materialId);
                         const diff = l.actualQty === null ? null : l.actualQty - l.systemQty;
                         const diffColor = diff === null || diff === 0 ? T.muted : diff > 0 ? T.blueDeep : T.redDeep;
                         return (
                           <div key={l.materialId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px dashed ${T.line}`, flexWrap: "wrap" }}>
-                            <div style={{ minWidth: 150, fontSize: 12, fontWeight: 700 }}>{material?.emoji} {material?.name}</div>
+                            <div style={{ minWidth: 150, fontSize: 12, fontWeight: 600 }}>{material?.name}</div>
                             <div style={{ fontSize: 11, color: T.muted, minWidth: 100 }}>Hệ thống: {l.systemQty.toLocaleString("vi-VN")}{material?.unit}</div>
                             {st.status === "counting" ? (
                               <input
@@ -841,12 +830,12 @@ export function AdminApp({ db, setDb, showToast }) {
                                 placeholder="Số thực tế"
                                 value={l.actualQty ?? ""}
                                 onChange={(e) => updateStocktakeLine(st.id, l.materialId, { actualQty: e.target.value === "" ? null : parseFloat(e.target.value) })}
-                                style={{ width: 90, padding: "4px 6px", fontSize: 11, border: `1px solid ${T.line}`, borderRadius: 6, outline: "none" }}
+                                style={{ width: 90, padding: "4px 6px", fontSize: 11, border: `1px solid ${T.line}`, borderRadius: 0, outline: "none" }}
                               />
                             ) : (
                               <div style={{ fontSize: 11, minWidth: 90 }}>Thực tế: {l.actualQty?.toLocaleString("vi-VN")}{material?.unit}</div>
                             )}
-                            <div style={{ fontSize: 11, fontWeight: 700, color: diffColor, minWidth: 60 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: diffColor, minWidth: 60 }}>
                               {diff !== null && (diff > 0 ? `+${diff}` : diff)}
                             </div>
                             {diff !== null && diff !== 0 && (
@@ -856,7 +845,7 @@ export function AdminApp({ db, setDb, showToast }) {
                                   placeholder="Lý do chênh lệch (bắt buộc)..."
                                   value={l.note}
                                   onChange={(e) => updateStocktakeLine(st.id, l.materialId, { note: e.target.value })}
-                                  style={{ flex: 1, minWidth: 160, padding: "4px 8px", fontSize: 11, border: `1px solid ${!l.note.trim() ? T.red : T.line}`, borderRadius: 6, outline: "none" }}
+                                  style={{ flex: 1, minWidth: 160, padding: "4px 8px", fontSize: 11, border: `1px solid ${!l.note.trim() ? T.redDeep : T.line}`, borderRadius: 0, outline: "none" }}
                                 />
                               ) : (
                                 <div style={{ fontSize: 11, color: T.muted, fontStyle: "italic" }}>{l.note}</div>
@@ -869,8 +858,8 @@ export function AdminApp({ db, setDb, showToast }) {
                   )}
 
                   {st.status === "counting" && (
-                    <Btn primary disabled={!canComplete} style={{ marginTop: 12 }} onClick={() => completeStocktake(st.id)}>
-                      Hoàn tất kiểm kê ✅
+                    <Btn variant="primary" disabled={!canComplete} style={{ marginTop: 12 }} onClick={() => completeStocktake(st.id)}>
+                      Hoàn tất kiểm kê
                     </Btn>
                   )}
                 </div>
@@ -884,12 +873,12 @@ export function AdminApp({ db, setDb, showToast }) {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Kho nguyên liệu 🧺</div>
-              <div style={{ fontSize: 11, color: T.muted }}>{lowStock.length > 0 ? `${lowStock.length} món sắp hết 🥺` : "Đầy đủ 💗"}</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 16 }}>Kho nguyên liệu</div>
+              <div style={{ fontSize: 11, color: T.muted }}>{lowStock.length > 0 ? `${lowStock.length} món sắp hết` : "Đầy đủ"}</div>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", background: T.soft, padding: "6px 12px", borderRadius: 12 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", background: T.soft, padding: "8px 14px", border: `1px solid ${T.lineHair}` }}>
               <div style={{ fontSize: 11.5, fontWeight: 600, color: T.text }}>Mức phục vụ (CSL): {Math.round(csl * 100)}%</div>
-              <input type="range" min="0.5" max="0.999" step="0.01" value={csl} onChange={e => setCsl(parseFloat(e.target.value))} style={{ width: 80, accentColor: T.pink }} />
+              <input type="range" min="0.5" max="0.999" step="0.01" value={csl} onChange={e => setCsl(parseFloat(e.target.value))} style={{ width: 80, accentColor: T.gold }} />
             </div>
           </div>
           {db.materials.map((m, i) => {
@@ -904,12 +893,12 @@ export function AdminApp({ db, setDb, showToast }) {
             const ROP = Math.ceil(stats.D * L + SS);
 
             let statusColor = T.green;
-            let statusText = "An toàn 🟢";
+            let statusText = "An toàn";
             let isLow = false;
 
             // Quyết định dựa trên Inventory Position (onHand + onOrder - reserved), không chỉ Available (nguyên tắc #3).
-            if (pos.position < SS) { statusColor = T.red; statusText = "Khẩn cấp 🔴"; isLow = true; }
-            else if (pos.position <= ROP) { statusColor = T.yellowDeep; statusText = "Cần đặt 🟡"; isLow = true; }
+            if (pos.position < SS) { statusColor = T.red; statusText = "Khẩn cấp"; isLow = true; }
+            else if (pos.position <= ROP) { statusColor = T.yellowDeep; statusText = "Cần đặt"; isLow = true; }
 
             const TargetStock = Math.max(m.min * 2, Math.ceil(ROP + SS + stats.D * 14));
             // Làm tròn lên theo MOQ + quy cách đóng gói (F09) — không đề xuất số lẻ như 370ml, mà 1 chai 500ml.
@@ -924,71 +913,70 @@ export function AdminApp({ db, setDb, showToast }) {
             const isExpanded = expandedMat === m.id;
 
             return (
-              <div key={m.id} style={{ padding: "12px 0", borderBottom: i < db.materials.length - 1 ? `1px dashed ${T.line}` : "none" }}>
+              <div key={m.id} style={{ padding: "12px 0", borderBottom: i < db.materials.length - 1 ? `1px dashed ${T.lineHair}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 24 }}>{m.emoji}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{m.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{m.name}</div>
                         <div style={{ fontSize: 10.5, color: T.muted, display: "flex", gap: 10, marginTop: 4, alignItems: "center" }}>
                           <span>D = {stats.D.toFixed(1)}/ngày</span>
                           <span>σD = {stats.sigma_D.toFixed(1)}</span>
                           <label style={{ display: "flex", alignItems: "center", gap: 3 }}>
                             L = <input type="number" min="1" max="60" value={L}
                                   onChange={e => setDb(d => ({ ...d, materials: d.materials.map(x => x.id === m.id ? { ...x, leadTime: parseInt(e.target.value) || 1 } : x) }))}
-                                  style={{ width: 36, padding: "2px", fontSize: 10, border: `1px solid ${T.line}`, borderRadius: 4, textAlign: "center", outline: "none" }} /> ngày
+                                  style={{ width: 36, padding: "2px", fontSize: 10, border: `1px solid ${T.line}`, borderRadius: 0, textAlign: "center", outline: "none" }} /> ngày
                           </label>
                         </div>
                         <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>
-                          🏷️ {supplier?.name || "Chưa gán NCC"} · MOQ {m.moq ? `${m.moq.toLocaleString("vi-VN")}${m.unit}` : "—"} · Đóng gói {m.packSize ? `${m.packSize.toLocaleString("vi-VN")}${m.unit}/kiện` : "—"}
+                          {supplier?.name || "Chưa gán NCC"} · MOQ {m.moq ? `${m.moq.toLocaleString("vi-VN")}${m.unit}` : "—"} · Đóng gói {m.packSize ? `${m.packSize.toLocaleString("vi-VN")}${m.unit}/kiện` : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: isLow ? T.redDeep : T.text }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: isLow ? T.redDeep : T.text }}>
                           Khả dụng: {pos.available.toLocaleString("vi-VN")} <span style={{ fontSize: 11 }}>{m.unit}</span>
                         </div>
                         <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>
                           Thực tế: {pos.onHand} | Giữ chỗ: {pos.reserved}{pos.onOrder > 0 ? ` | Đang về: ${pos.onOrder}` : ""}
                         </div>
-                        <div style={{ fontSize: 10, color: statusColor, fontWeight: 700, marginTop: 3 }}>{statusText} (ROP: {ROP} | SS: {SS})</div>
+                        <div style={{ fontSize: 10, color: statusColor, fontWeight: 600, marginTop: 3 }}>{statusText} (ROP: {ROP} | SS: {SS})</div>
                       </div>
                     </div>
-                    <div style={{ height: 6, background: T.pinkSoft, borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 99, background: statusColor, transition: "width 0.3s ease, background 0.3s ease" }} />
+                    <div style={{ height: 3, background: T.pinkSoft, borderRadius: 0, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 0, background: statusColor, transition: "width 0.3s ease, background 0.3s ease" }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     <Btn small onClick={() => setModal({ type: "newPO", data: { id: m.id, suggest, calcDetails: { D: stats.D, sigma: stats.sigma_D, L, SS, ROP, pos, TargetStock, rawNeed, moq: m.moq, packSize: m.packSize } } })}>
                       + Đặt hàng
                     </Btn>
-                    <Btn small onClick={() => setExpandedMat(isExpanded ? null : m.id)} style={alertBatchCount > 0 ? { background: "#FBE3DA", color: T.redDeep } : {}}>
-                      Lô {activeBatches.length}{alertBatchCount > 0 ? ` ⚠️${alertBatchCount}` : ""}
+                    <Btn small onClick={() => setExpandedMat(isExpanded ? null : m.id)} style={alertBatchCount > 0 ? { color: T.redDeep, borderColor: T.redDeep } : {}}>
+                      Lô {activeBatches.length}{alertBatchCount > 0 ? ` · ${alertBatchCount}` : ""}
                     </Btn>
                   </div>
                 </div>
                 {isExpanded && (
-                  <div style={{ marginTop: 10, background: "#fff", borderRadius: 10, padding: "10px 12px", border: `1px dashed ${T.line}` }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, marginBottom: 6 }}>
+                  <div style={{ marginTop: 10, background: T.card, borderRadius: 0, padding: "10px 12px", border: `1px dashed ${T.line}` }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: T.muted, marginBottom: 6 }}>
                       Lô hàng — thứ tự xuất kho FEFO/FIFO (lô trên cùng xuất trước)
                     </div>
                     {matBatches.length === 0 && <div style={{ fontSize: 11, color: T.muted }}>Chưa có lô nào</div>}
                     {matBatches.map((b) => {
                       const st = batchStatus(b.expiryDate);
-                      const badgeStyle = {
-                        none: ["#F1E9DC", T.muted],
-                        ok: ["#E4F0D8", T.greenDeep],
-                        soon: ["#FFF2D6", T.yellowDeep],
-                        expired: ["#FBE3DA", T.redDeep],
+                      const badgeVariant = {
+                        none: "default",
+                        ok: "success",
+                        soon: "gold",
+                        expired: "danger",
                       }[st.level];
                       return (
                         <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px dashed ${T.line}`, opacity: b.remainingQty > 0 ? 1 : 0.45 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, minWidth: 60 }}>{b.id}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, minWidth: 60 }}>{b.id}</div>
                           <div style={{ fontSize: 10.5, color: T.muted, flex: 1 }}>Nhập {new Date(b.receivedDate).toLocaleDateString("vi-VN")}</div>
-                          <div style={{ fontSize: 11, fontWeight: 700, minWidth: 70, textAlign: "right" }}>{b.remainingQty.toLocaleString("vi-VN")}/{b.initialQty.toLocaleString("vi-VN")} {m.unit}</div>
-                          <Badge color={badgeStyle[0]} deep={badgeStyle[1]}>{st.label}</Badge>
+                          <div style={{ fontSize: 11, fontWeight: 600, minWidth: 70, textAlign: "right" }}>{b.remainingQty.toLocaleString("vi-VN")}/{b.initialQty.toLocaleString("vi-VN")} {m.unit}</div>
+                          <Badge variant={badgeVariant}>{st.label}</Badge>
                           {b.remainingQty > 0 && (
-                            <Btn small danger onClick={() => setModal({ type: "writeOff", data: { batchId: b.id, materialId: m.id } })} style={{ padding: "3px 8px", fontSize: 9.5 }}>
+                            <Btn small variant="danger" onClick={() => setModal({ type: "writeOff", data: { batchId: b.id, materialId: m.id } })} style={{ padding: "3px 8px", fontSize: 9.5 }}>
                               Ghi hao hụt
                             </Btn>
                           )}
@@ -1003,25 +991,25 @@ export function AdminApp({ db, setDb, showToast }) {
           
           <div style={{ marginTop: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Lịch sử biến động kho 📋</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15 }}>Lịch sử biến động kho</div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 10.5, color: T.muted }}>Lọc theo vai trò:</span>
                 <select
                   value={txRoleFilter}
                   onChange={(e) => setTxRoleFilter(e.target.value)}
-                  style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "inherit", color: T.text, background: "#fff" }}
+                  style={{ padding: "3px 8px", borderRadius: 0, border: `1px solid ${T.line}`, outline: "none", fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", color: T.text, background: T.card }}
                 >
                   <option value="all">Tất cả</option>
                   {ROLES.map((r) => (
-                    <option key={r.id} value={r.id}>{r.emoji} {r.label}</option>
+                    <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
               </div>
             </div>
-            <div style={{ background: T.soft, borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ background: T.soft, borderRadius: 0, border: `1px solid ${T.lineHair}`, overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
                 <thead>
-                  <tr style={{ background: "rgba(143,108,59,0.1)", textAlign: "left" }}>
+                  <tr style={{ background: T.card, textAlign: "left" }}>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text }}>Loại</th>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text }}>Mã hàng</th>
                     <th style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.text, textAlign: "right" }}>Số lượng</th>
@@ -1037,23 +1025,23 @@ export function AdminApp({ db, setDb, showToast }) {
                     return (
                       <tr key={tx.id}>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}` }}>
-                          <Badge color={isIN ? T.greenSoft : T.redSoft} deep={isIN ? T.greenDeep : T.redDeep}>{tx.type}</Badge>
+                          <Badge variant={isIN ? "success" : "danger"}>{tx.type}</Badge>
                         </td>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, fontWeight: 600 }}>{tx.itemId}</td>
-                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, textAlign: "right", color: isIN ? T.greenDeep : T.redDeep, fontWeight: 700 }}>
+                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, textAlign: "right", color: isIN ? T.greenDeep : T.redDeep, fontWeight: 600 }}>
                           {isIN ? "+" : ""}{tx.qty}
                         </td>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted }}>
                           <div>{tx.reason}</div>
                           {(tx.txType || tx.batchId || tx.refDoc) && (
-                            <div style={{ fontSize: 9.5, color: "#B8A78A", marginTop: 2 }}>
+                            <div style={{ fontSize: 9.5, color: T.muted, marginTop: 2 }}>
                               {tx.txType && TX_TYPE_LABELS[tx.txType]}
                               {tx.batchId && ` · Lô: ${tx.batchId}`}
                               {tx.refDoc && ` · Chứng từ: ${tx.refDoc}`}
                             </div>
                           )}
                         </td>
-                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted, whiteSpace: "nowrap" }}>{role ? `${role.emoji} ${role.label}` : "—"}</td>
+                        <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, color: T.muted, whiteSpace: "nowrap" }}>{role ? role.label : "—"}</td>
                         <td style={{ padding: "8px 12px", borderBottom: `1px solid ${T.line}`, textAlign: "right", color: T.muted }}>
                           {tx.date && !isNaN(new Date(tx.date).getTime()) ? new Date(tx.date).toLocaleString("vi-VN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                         </td>
@@ -1065,7 +1053,7 @@ export function AdminApp({ db, setDb, showToast }) {
                   )}
                 </tbody>
               </table>
-              <div style={{ padding: "8px", textAlign: "center", fontSize: 10.5, color: T.muted, background: "rgba(143,108,59,0.05)" }}>
+              <div style={{ padding: "8px", textAlign: "center", fontSize: 10.5, color: T.muted, background: T.card }}>
                 Hiển thị 15 biến động gần nhất
               </div>
             </div>
@@ -1086,33 +1074,34 @@ export function AdminApp({ db, setDb, showToast }) {
                       width: 42,
                       height: 42,
                       borderRadius: "50%",
-                      background: T.pinkSoft,
+                      background: T.dark,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 16,
-                      fontWeight: 700,
-                      color: T.pinkDeep,
+                      fontWeight: 600,
+                      fontFamily: "'Cinzel',serif",
+                      color: T.gold,
                     }}
                   >
                     {c.name.trim().slice(0, 1)}
                   </div>
                   <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.name}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>{c.name}</div>
                     <div style={{ fontSize: 11, color: T.muted }}>{c.phone}</div>
                   </div>
                 </div>
-                {c.note && <div style={{ fontSize: 11.5, background: T.soft, borderRadius: 12, padding: "7px 10px", marginBottom: 8, color: T.muted }}>📝 {c.note}</div>}
+                {c.note && <div style={{ fontSize: 11.5, background: T.soft, border: `1px solid ${T.lineHair}`, padding: "8px 10px", marginBottom: 8, color: T.muted }}>{c.note}</div>}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Badge color={T.pinkSoft} deep={T.pinkDeep}>
+                  <Badge variant="default">
                     {theirOrders.length} đơn
                   </Badge>
-                  <Badge color="#E4F0D8" deep={T.greenDeep}>
+                  <Badge variant="success">
                     {fmtVND(spent)}
                   </Badge>
                   {c.fav && (
-                    <Badge color="#EDE2F1" deep={T.lilacDeep}>
-                      💗 {RECIPES[c.fav]?.name}
+                    <Badge variant="gold">
+                      {RECIPES[c.fav]?.name}
                     </Badge>
                   )}
                 </div>
@@ -1187,11 +1176,11 @@ export function AdminApp({ db, setDb, showToast }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Card>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>1. Nhập - Xuất - Tồn theo kỳ 📆</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15 }}>1. Nhập - Xuất - Tồn theo kỳ</div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                    <input type="date" value={reportFrom} onChange={(e) => setReportFrom(e.target.value)} style={{ padding: "3px 8px", borderRadius: 0, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", outline: "none" }} />
                     <span style={{ fontSize: 11, color: T.muted }}>đến</span>
-                    <input type="date" value={reportTo} onChange={(e) => setReportTo(e.target.value)} style={{ padding: "3px 8px", borderRadius: 8, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                    <input type="date" value={reportTo} onChange={(e) => setReportTo(e.target.value)} style={{ padding: "3px 8px", borderRadius: 0, border: `1px solid ${T.line}`, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", outline: "none" }} />
                   </div>
                 </div>
                 {stockMovement.length === 0 ? (
@@ -1211,11 +1200,11 @@ export function AdminApp({ db, setDb, showToast }) {
                       <tbody>
                         {stockMovement.map((r) => (
                           <tr key={r.id} style={{ borderBottom: `1px dashed ${T.line}` }}>
-                            <td style={{ padding: "6px 10px" }}>{r.emoji} {r.name}</td>
+                            <td style={{ padding: "6px 10px" }}>{r.name}</td>
                             <td style={{ padding: "6px 10px", textAlign: "right" }}>{r.startQty.toLocaleString("vi-VN")}{r.unit}</td>
-                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.greenDeep, fontWeight: 700 }}>+{r.totalIn.toLocaleString("vi-VN")}</td>
-                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.redDeep, fontWeight: 700 }}>-{r.totalOut.toLocaleString("vi-VN")}</td>
-                            <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700 }}>{r.endQty.toLocaleString("vi-VN")}{r.unit}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.greenDeep, fontWeight: 600 }}>+{r.totalIn.toLocaleString("vi-VN")}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", color: T.redDeep, fontWeight: 600 }}>-{r.totalOut.toLocaleString("vi-VN")}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 600 }}>{r.endQty.toLocaleString("vi-VN")}{r.unit}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1225,18 +1214,17 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>2. Hàng sắp hết hạn ⏳</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>2. Hàng sắp hết hạn</div>
                 {expiringSoon.length === 0 ? (
-                  <div style={{ fontSize: 12, color: T.muted }}>Không có lô nào sắp/đã hết hạn 💗</div>
+                  <div style={{ fontSize: 12, color: T.muted }}>Không có lô nào sắp/đã hết hạn.</div>
                 ) : (
                   expiringSoon.map((b) => {
-                    const badgeStyle = b.est.level === "expired" ? ["#FBE3DA", T.redDeep] : ["#FFF2D6", T.yellowDeep];
+                    const badgeVariant = b.est.level === "expired" ? "danger" : "gold";
                     return (
                       <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px dashed ${T.line}` }}>
-                        <span style={{ fontSize: 16 }}>{b.emoji}</span>
                         <div style={{ flex: 1, fontSize: 11.5 }}>{b.name} <span style={{ color: T.muted, fontSize: 10 }}>({b.kind} · Lô {b.id})</span></div>
-                        <div style={{ fontSize: 11, fontWeight: 700 }}>{b.remainingQty.toLocaleString("vi-VN")}{b.unit}</div>
-                        <Badge color={badgeStyle[0]} deep={badgeStyle[1]}>{b.est.label}</Badge>
+                        <div style={{ fontSize: 11, fontWeight: 600 }}>{b.remainingQty.toLocaleString("vi-VN")}{b.unit}</div>
+                        <Badge variant={badgeVariant}>{b.est.label}</Badge>
                       </div>
                     );
                   })
@@ -1244,7 +1232,7 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>3. Chênh lệch BOM — định mức vs thực tế 📐</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>3. Chênh lệch BOM — định mức vs thực tế</div>
                 {bomVariance.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.muted }}>Chưa có lệnh sản xuất nào hoàn thành để so sánh.</div>
                 ) : (
@@ -1265,11 +1253,11 @@ export function AdminApp({ db, setDb, showToast }) {
                           const overUse = v.variancePct > 5;
                           return (
                             <tr key={`${v.productId}-${v.matId}`} style={{ borderBottom: `1px dashed ${T.line}` }}>
-                              <td style={{ padding: "6px 10px" }}>{RECIPES[v.productId]?.emoji} {RECIPES[v.productId]?.name}</td>
-                              <td style={{ padding: "6px 10px" }}>{material?.emoji} {material?.name}</td>
+                              <td style={{ padding: "6px 10px" }}>{RECIPES[v.productId]?.name}</td>
+                              <td style={{ padding: "6px 10px" }}>{material?.name}</td>
                               <td style={{ padding: "6px 10px", textAlign: "right" }}>{v.perUnit.toLocaleString("vi-VN")}{material?.unit}</td>
                               <td style={{ padding: "6px 10px", textAlign: "right" }}>{v.actualPerUnit.toFixed(1)}{material?.unit}</td>
-                              <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700, color: overUse ? T.redDeep : v.variancePct < -5 ? T.blueDeep : T.greenDeep }}>
+                              <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 600, color: overUse ? T.redDeep : v.variancePct < -5 ? T.blueDeep : T.greenDeep }}>
                                 {v.variancePct > 0 ? "+" : ""}{v.variancePct.toFixed(1)}%
                               </td>
                             </tr>
@@ -1282,17 +1270,16 @@ export function AdminApp({ db, setDb, showToast }) {
               </Card>
 
               <Card>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>4. Tỷ lệ hết hàng theo SKU 🚨</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 10 }}>4. Tỷ lệ hết hàng theo SKU</div>
                 <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>
                   Snapshot tại thời điểm xem (app chưa lưu lịch sử tồn kho theo ngày nên chưa tính được % thời gian hết hàng thực sự).
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
                   Đang hết hàng: <span style={{ color: stockoutRate > 0 ? T.redDeep : T.greenDeep }}>{stockoutRate.toFixed(0)}%</span> SKU ({stockoutList.filter((s) => s.isOut).length}/{activeProducts.length})
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
                   {stockoutList.map((s) => (
-                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px", background: s.isOut ? "#FBE3DA" : T.soft, borderRadius: 8 }}>
-                      <span>{s.emoji}</span>
+                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px", background: s.isOut ? T.red : T.soft, border: `1px solid ${T.lineHair}` }}>
                       <div style={{ flex: 1, fontSize: 11 }}>{s.name}</div>
                       <b style={{ fontSize: 11, color: s.isOut ? T.redDeep : T.text }}>{s.sellable}</b>
                     </div>
@@ -1305,11 +1292,11 @@ export function AdminApp({ db, setDb, showToast }) {
 
       {tab === "logistics" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Sandbox Tối Ưu Kho Hàng 📦</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 18, marginBottom: 4 }}>Sandbox Tối Ưu Kho Hàng</div>
           <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>Mô phỏng trực quan các thuật toán quản lý chuỗi cung ứng (Inventory Management) dựa trên thống kê xác suất.</div>
-          
+
           <Card>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>1. Tối ưu theo CSL (Continuous Review System)</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>1. Tối ưu theo CSL (Continuous Review System)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
@@ -1357,15 +1344,15 @@ export function AdminApp({ db, setDb, showToast }) {
                 const maxY = Math.max(...points.map(p => p.y), 0.001);
                 
                 return (
-                  <div style={{ background: T.soft, borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700 }}>
+                  <div style={{ background: T.soft, borderRadius: 0, border: `1px solid ${T.lineHair}`, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
                       <span style={{ color: T.greenDeep }}>SS = {SS}</span>
                       <span style={{ color: T.pinkDeep }}>ROP = {ROP}</span>
                     </div>
-                    
-                    <div style={{ fontSize: 11, fontWeight: 700, color: T.muted }}>Biểu đồ chu kỳ tồn kho (Sawtooth)</div>
+
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.muted }}>Biểu đồ chu kỳ tồn kho (Sawtooth)</div>
                     <svg viewBox="0 0 200 80" style={{ width: "100%", height: 80, overflow: "visible" }}>
-                      <rect x="0" y="0" width="200" height="80" fill="#fff" rx="4" />
+                      <rect x="0" y="0" width="200" height="80" fill={T.card} rx="0" />
                       <line x1="0" y1={80 - (SS/maxInv)*80} x2="200" y2={80 - (SS/maxInv)*80} stroke={T.green} strokeWidth="1" strokeDasharray="3 3" />
                       <line x1="0" y1={80 - (ROP/maxInv)*80} x2="200" y2={80 - (ROP/maxInv)*80} stroke={T.pink} strokeWidth="1" strokeDasharray="3 3" />
                       <path d={`M 0,${80 - (maxInv/maxInv)*80} L 60,${80 - (SS/maxInv)*80} L 60,${80 - (maxInv/maxInv)*80} L 120,${80 - (SS/maxInv)*80} L 120,${80 - (maxInv/maxInv)*80} L 180,${80 - (SS/maxInv)*80}`} fill="none" stroke={T.blue} strokeWidth="2" strokeLinejoin="round" />
@@ -1373,9 +1360,9 @@ export function AdminApp({ db, setDb, showToast }) {
                       <text x="198" y={80 - (ROP/maxInv)*80 - 4} fontSize="8" fill={T.pinkDeep} textAnchor="end">ROP</text>
                     </svg>
 
-                    <div style={{ fontSize: 11, fontWeight: 700, color: T.muted }}>Phân phối chuẩn nhu cầu L={leadTime}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.muted }}>Phân phối chuẩn nhu cầu L={leadTime}</div>
                     <svg viewBox="0 0 200 80" style={{ width: "100%", height: 80, overflow: "visible" }}>
-                      <rect x="0" y="0" width="200" height="80" fill="#fff" rx="4" />
+                      <rect x="0" y="0" width="200" height="80" fill={T.card} rx="0" />
                       {points.length > 0 && (
                         <>
                           <path d={`M ${points.map(p => `${((p.x - points[0].x)/(points[points.length-1].x - points[0].x))*200},${80 - (p.y/maxY)*70}`).join(" L ")}`} fill="none" stroke={T.blueDeep} strokeWidth="1.5" />
@@ -1392,7 +1379,7 @@ export function AdminApp({ db, setDb, showToast }) {
           </Card>
 
           <Card>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>2. Tối ưu theo mô hình Newsvendor (Hàng mùa vụ)</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontWeight: 400, fontSize: 15, marginBottom: 12 }}>2. Tối ưu theo mô hình Newsvendor (Hàng mùa vụ)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
@@ -1428,13 +1415,13 @@ export function AdminApp({ db, setDb, showToast }) {
                 const optCSL = issues.length === 0 ? Cu / (Cu + Co) : 0;
                 
                 return (
-                  <div style={{ background: T.soft, borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: T.soft, borderRadius: 0, border: `1px solid ${T.lineHair}`, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                     {issues.length > 0 ? (
-                      <div style={{ color: T.redDeep, fontSize: 12, fontWeight: 700 }}>{issues.join(" - ")}</div>
+                      <div style={{ color: T.redDeep, fontSize: 12, fontWeight: 600 }}>{issues.join(" - ")}</div>
                     ) : (
                       <>
                         <div style={{ fontSize: 11.5, color: T.muted }}>Chi phí thiếu (Cu) = {Cu}k, Chi phí thừa (Co) = {Co}k</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: T.blueDeep }}>Mức phục vụ tối ưu (CR): {(optCSL * 100).toFixed(1)}%</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.blueDeep }}>Mức phục vụ tối ưu (CR): {(optCSL * 100).toFixed(1)}%</div>
                         <div style={{ fontSize: 11.5, color: T.text, marginTop: 4 }}>
                           Áp dụng vào phân phối chuẩn bên trên, hệ thống sẽ tự động điều chỉnh CSL thành <b>{(optCSL * 100).toFixed(1)}%</b> để đạt được lợi nhuận cao nhất!
                         </div>
@@ -1477,7 +1464,7 @@ export function AdminApp({ db, setDb, showToast }) {
               return { ...d, purchaseOrders: [...(d.purchaseOrders || []), po], nextPurNum: nextPurNum + 1 };
             });
             setModal(null);
-            showToast("Đã tạo đơn mua hàng! 📝");
+            showToast("Đã tạo đơn mua hàng!");
           }}
         />
       )}
@@ -1518,7 +1505,7 @@ export function AdminApp({ db, setDb, showToast }) {
                 };
               });
               setModal(null);
-              showToast("Đã nhận hàng, tạo lô mới và giao dịch! 📦");
+              showToast("Đã nhận hàng, tạo lô mới và giao dịch!");
             }}
           />
         );
@@ -1532,7 +1519,7 @@ export function AdminApp({ db, setDb, showToast }) {
           onSave={(price, isSeasonal, salvageFields) => {
             setDb((d) => ({ ...d, products: d.products.map((p) => (p.id === modal.data ? { ...p, price, isSeasonal, ...salvageFields } : p)) }));
             setModal(null);
-            showToast("Đã cập nhật cấu hình sản phẩm ✏️");
+            showToast("Đã cập nhật cấu hình sản phẩm.");
           }}
         />
       )}
@@ -1543,7 +1530,7 @@ export function AdminApp({ db, setDb, showToast }) {
           onSave={(config) => {
             setDb((d) => ({ ...d, salvageConfig: config }));
             setModal(null);
-            showToast("Đã cập nhật giá thanh lý mặc định! ⚙️");
+            showToast("Đã cập nhật giá thanh lý mặc định!");
           }}
         />
       )}
@@ -1578,7 +1565,7 @@ export function AdminApp({ db, setDb, showToast }) {
               return { ...d, stocktakes: [...(d.stocktakes || []), st], nextStNum: nextStNum + 1 };
             });
             setModal(null);
-            showToast("Đã tạo phiếu kiểm kê, chốt số liệu hệ thống! 📋");
+            showToast("Đã tạo phiếu kiểm kê, chốt số liệu hệ thống!");
           }}
         />
       )}
@@ -1610,7 +1597,7 @@ export function AdminApp({ db, setDb, showToast }) {
                 return { ...d, batches, materials, transactions: [...(d.transactions || []), tx], nextTxNum: (d.nextTxNum || 1) + 1 };
               });
               setModal(null);
-              showToast("Đã ghi nhận hao hụt! 📉");
+              showToast("Đã ghi nhận hao hụt!");
             }}
           />
         );
@@ -1641,7 +1628,7 @@ export function AdminApp({ db, setDb, showToast }) {
                 return { ...d, products, productBatches: pBatches, nextPBatchNum, transactions, nextTxNum };
               });
               setModal(null);
-              showToast("Đã ghi nhận khách trả hàng (chờ kiểm tra chất lượng)! ↩️");
+              showToast("Đã ghi nhận khách trả hàng (chờ kiểm tra chất lượng).");
             }}
           />
         );
@@ -1666,13 +1653,13 @@ function ProductionModal({ products, materials, onClose, onSave }) {
   })();
 
   return (
-    <Modal title={`Tạo Lệnh Sản Xuất`} onClose={onClose}>
+    <Modal title="Tạo Lệnh Sản Xuất" onClose={onClose}>
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, marginBottom: 4 }}>Chọn sản phẩm:</div>
-        <select value={productId} onChange={e => setProductId(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 13, fontFamily: "inherit" }}>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, marginBottom: 4 }}>Chọn sản phẩm:</div>
+        <select value={productId} onChange={e => setProductId(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 0, border: `1px solid ${T.line}`, outline: "none", fontSize: 13, fontFamily: "'Josefin Sans',sans-serif" }}>
           {products.map(p => {
              const rr = RECIPES[p.id];
-             return <option key={p.id} value={p.id}>{rr?.emoji} {rr?.name}</option>
+             return <option key={p.id} value={p.id}>{rr?.name}</option>
           })}
         </select>
       </div>
@@ -1680,8 +1667,8 @@ function ProductionModal({ products, materials, onClose, onSave }) {
       <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
         Tồn nguyên liệu hiện tại đủ làm tối đa: <b style={{ color: canMake >= qty ? T.greenDeep : T.redDeep }}>{canMake} cây</b>
       </div>
-      <Btn primary disabled={qty <= 0} style={{ width: "100%" }} onClick={() => onSave(productId, qty)}>
-        Tạo lệnh 🏭
+      <Btn variant="primary" disabled={qty <= 0} style={{ width: "100%" }} onClick={() => onSave(productId, qty)}>
+        Tạo lệnh
       </Btn>
     </Modal>
   );
@@ -1704,13 +1691,13 @@ function NewPurchaseOrderModal({ materials, suppliers, presetMaterialId, suggest
   };
 
   return (
-    <Modal title={isPreset ? `Đặt hàng — ${material.emoji} ${material.name}` : "Tạo đơn mua hàng mới"} onClose={onClose}>
+    <Modal title={isPreset ? `Đặt hàng — ${material.name}` : "Tạo đơn mua hàng mới"} onClose={onClose}>
       {!isPreset && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, marginBottom: 4 }}>Chọn nguyên vật liệu:</div>
-          <select value={materialId} onChange={(e) => pickMaterial(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 8, border: `1px solid ${T.line}`, outline: "none", fontSize: 13, fontFamily: "inherit" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, marginBottom: 4 }}>Chọn nguyên vật liệu:</div>
+          <select value={materialId} onChange={(e) => pickMaterial(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 0, border: `1px solid ${T.line}`, outline: "none", fontSize: 13, fontFamily: "'Josefin Sans',sans-serif" }}>
             {materials.map((m) => (
-              <option key={m.id} value={m.id}>{m.emoji} {m.name}</option>
+              <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
         </div>
@@ -1719,9 +1706,9 @@ function NewPurchaseOrderModal({ materials, suppliers, presetMaterialId, suggest
         Nhà cung cấp: <b style={{ color: T.text }}>{supplier?.name ?? "Chưa gán"}</b> · Lead Time TB: <b style={{ color: T.text }}>{supplier?.leadTimeAvg ?? "?"} ngày</b>
       </div>
       {calcDetails && (
-        <div style={{ background: T.soft, padding: "12px 14px", borderRadius: 10, marginBottom: 14, color: T.text }}>
-          <div style={{ fontWeight: 700, marginBottom: 6, color: T.blueDeep, display: "flex", gap: 6, alignItems: "center" }}>
-            <span style={{ fontSize: 16 }}>🤖</span> AI Khuyến nghị Đặt hàng: {suggestedQty.toLocaleString("vi-VN")} {material.unit}
+        <div style={{ background: T.soft, padding: "12px 14px", borderRadius: 0, border: `1px solid ${T.lineHair}`, marginBottom: 14, color: T.text }}>
+          <div style={{ fontWeight: 600, marginBottom: 6, color: T.blueDeep, display: "flex", gap: 6, alignItems: "center" }}>
+            Khuyến nghị Đặt hàng: {suggestedQty.toLocaleString("vi-VN")} {material.unit}
           </div>
           <ul style={{ paddingLeft: 18, margin: 0, display: "flex", flexDirection: "column", gap: 5, fontSize: 11.5 }}>
             <li>Tốc độ tiêu thụ (D): <b>{calcDetails.D.toFixed(1)}/ngày</b> (độ lệch ±{calcDetails.sigma.toFixed(1)})</li>
@@ -1746,8 +1733,8 @@ function NewPurchaseOrderModal({ materials, suppliers, presetMaterialId, suggest
       <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
         Ước tính chi phí: <b style={{ color: T.pinkDeep }}>{fmtVND(Math.round(qty * unitCost))}</b>
       </div>
-      <Btn primary disabled={qty <= 0 || unitCost < 0} style={{ width: "100%" }} onClick={() => onSave(materialId, qty, unitCost)}>
-        Tạo đơn mua 📝
+      <Btn variant="primary" disabled={qty <= 0 || unitCost < 0} style={{ width: "100%" }} onClick={() => onSave(materialId, qty, unitCost)}>
+        Tạo đơn mua
       </Btn>
     </Modal>
   );
@@ -1758,7 +1745,7 @@ function ReceivePOModal({ po, material, onClose, onSave }) {
   const [expiryDate, setExpiryDate] = useState("");
   if (!material) return null;
   return (
-    <Modal title={`Nhận hàng — ${material.emoji} ${material.name}`} onClose={onClose}>
+    <Modal title={`Nhận hàng — ${material.name}`} onClose={onClose}>
       <div style={{ fontSize: 12, color: T.muted, marginBottom: 14 }}>
         Đơn <b style={{ color: T.text }}>{po.id}</b> · đặt {po.qty.toLocaleString("vi-VN")}{material.unit} · dự kiến về {new Date(po.expectedDate).toLocaleDateString("vi-VN")}
       </div>
@@ -1767,8 +1754,8 @@ function ReceivePOModal({ po, material, onClose, onSave }) {
       <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
         Đơn giá đã chốt: <b style={{ color: T.pinkDeep }}>{fmtVND(po.unitCost)}</b> · Tổng: <b style={{ color: T.pinkDeep }}>{fmtVND(Math.round(qty * po.unitCost))}</b>
       </div>
-      <Btn primary disabled={qty <= 0} style={{ width: "100%" }} onClick={() => onSave(qty, expiryDate || null)}>
-        Xác nhận nhận hàng ✅
+      <Btn variant="primary" disabled={qty <= 0} style={{ width: "100%" }} onClick={() => onSave(qty, expiryDate || null)}>
+        Xác nhận nhận hàng
       </Btn>
     </Modal>
   );
@@ -1794,24 +1781,24 @@ function PriceModal({ product, recipe, salvageConfig, onClose, onSave }) {
   const netSalvage = Math.max(0, grossSalvage - salesFees - (Number(repackagingCost) || 0) - (Number(disposalCost) || 0));
 
   return (
-    <Modal title={`Cấu hình — ${recipe.emoji} ${recipe.name}`} onClose={onClose}>
+    <Modal title={`Cấu hình — ${recipe.name}`} onClose={onClose}>
       <Input label="Giá bán (đ)" type="number" value={price} onChange={setPrice} />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, marginTop: 4 }}>
-        <input type="checkbox" checked={isSeasonal} onChange={e => setIsSeasonal(e.target.checked)} id="cb-seasonal" style={{ width: 16, height: 16, accentColor: T.pink }} />
-        <label htmlFor="cb-seasonal" style={{ fontSize: 13, fontWeight: 700, color: T.text, cursor: "pointer" }}>Sản phẩm Mùa vụ (Dùng thuật toán Newsvendor)</label>
+        <input type="checkbox" checked={isSeasonal} onChange={e => setIsSeasonal(e.target.checked)} id="cb-seasonal" style={{ width: 16, height: 16, accentColor: T.gold }} />
+        <label htmlFor="cb-seasonal" style={{ fontSize: 13, fontWeight: 600, color: T.text, cursor: "pointer" }}>Sản phẩm Mùa vụ (Dùng thuật toán Newsvendor)</label>
       </div>
 
       {isSeasonal && (
         <>
-          <div style={{ fontSize: 11, color: T.muted, marginBottom: 10, background: T.soft, padding: 8, borderRadius: 8 }}>
-            Hàng mùa vụ (VD: Valentine, Giáng Sinh) sẽ bị ế nếu qua mùa. Cấu hình <b>Giá thanh lý</b> theo 3 cấp (F15) để thuật toán tính rủi ro tồn kho.
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 10, background: T.soft, padding: 8, border: `1px solid ${T.lineHair}` }}>
+            Hàng mùa vụ (VD: Valentine, Giáng Sinh) sẽ bị ế nếu qua mùa. Cấu hình <b>Giá thanh lý</b> theo 3 cấp để thuật toán tính rủi ro tồn kho.
           </div>
           <Input label={`Giá xả hàng gộp riêng SKU (đ) — để trống dùng ${tierLabel} (${fmtVND(tierGross)})`} type="number" value={salvageOverride} onChange={setSalvageOverride} placeholder={String(tierGross)} />
           <Input label={`Phí bán khi xả hàng (%) — để trống dùng mặc định ${Math.round((salvageConfig?.defaultFeesPct ?? 0.05) * 100)}%`} type="number" value={feesPctOverride} onChange={setFeesPctOverride} />
           <Input label="Chi phí đóng gói lại (đ)" type="number" value={repackagingCost} onChange={setRepackagingCost} />
           <Input label="Chi phí huỷ hàng (đ)" type="number" value={disposalCost} onChange={setDisposalCost} />
-          <div style={{ fontSize: 11, color: T.muted, marginBottom: 12, background: T.soft, padding: 8, borderRadius: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 12, background: T.soft, padding: 8, border: `1px solid ${T.lineHair}`, lineHeight: 1.6 }}>
             Giá xả {fmtVND(grossSalvage)} − Phí bán {fmtVND(salesFees)} − Đóng gói lại {fmtVND(Number(repackagingCost) || 0)} − Huỷ hàng {fmtVND(Number(disposalCost) || 0)}
             {" = "}<b style={{ color: T.text }}>Giá trị thu hồi ròng (NetSalvageValue) {fmtVND(netSalvage)}</b>
           </div>
@@ -1822,7 +1809,7 @@ function PriceModal({ product, recipe, salvageConfig, onClose, onSave }) {
         Giá vốn {fmtVND(product.cost)} → biên lãi <b style={{ color: margin >= 40 ? T.greenDeep : T.yellowDeep }}>{margin}%</b>
       </div>
       <Btn
-        primary
+        variant="primary"
         disabled={price <= 0}
         style={{ width: "100%" }}
         onClick={() =>
@@ -1834,7 +1821,7 @@ function PriceModal({ product, recipe, salvageConfig, onClose, onSave }) {
           })
         }
       >
-        Lưu ✏️
+        Lưu
       </Btn>
     </Modal>
   );
@@ -1852,18 +1839,18 @@ function SalvageConfigModal({ config, onClose, onSave }) {
       </div>
       <Input label="Mặc định hệ thống (% giá vốn) — cấp 3" type="number" value={systemPct} onChange={setSystemPct} />
       <Input label="Phí bán mặc định khi xả hàng (%)" type="number" value={defaultFeesPct} onChange={setDefaultFeesPct} />
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, margin: "10px 0 6px" }}>Mặc định theo dòng sản phẩm (% giá vốn) — cấp 2</div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: T.muted, margin: "10px 0 6px" }}>Mặc định theo dòng sản phẩm (% giá vốn) — cấp 2</div>
       {LINES.map((l) => (
         <Input
           key={l.id}
-          label={`${l.emoji} ${l.name}`}
+          label={l.name}
           type="number"
           value={byLine[l.id]}
           onChange={(v) => setByLine((b) => ({ ...b, [l.id]: v }))}
         />
       ))}
       <Btn
-        primary
+        variant="primary"
         style={{ width: "100%" }}
         onClick={() =>
           onSave({
@@ -1873,7 +1860,7 @@ function SalvageConfigModal({ config, onClose, onSave }) {
           })
         }
       >
-        Lưu cấu hình ⚙️
+        Lưu cấu hình
       </Btn>
     </Modal>
   );
@@ -1901,17 +1888,17 @@ function NewStocktakeModal({ materials, onClose, onSave }) {
       <Btn small onClick={toggleAll} style={{ marginBottom: 10 }}>
         {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
       </Btn>
-      <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${T.line}`, borderRadius: 10, padding: "6px 10px", marginBottom: 14 }}>
+      <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${T.line}`, borderRadius: 0, padding: "6px 10px", marginBottom: 14 }}>
         {materials.map((m) => (
           <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", cursor: "pointer" }}>
-            <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggle(m.id)} style={{ width: 15, height: 15, accentColor: T.pink }} />
-            <span style={{ fontSize: 12 }}>{m.emoji} {m.name}</span>
+            <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggle(m.id)} style={{ width: 15, height: 15, accentColor: T.gold }} />
+            <span style={{ fontSize: 12 }}>{m.name}</span>
             <span style={{ fontSize: 10.5, color: T.muted, marginLeft: "auto" }}>{m.qty.toLocaleString("vi-VN")}{m.unit}</span>
           </label>
         ))}
       </div>
-      <Btn primary disabled={selected.size === 0} style={{ width: "100%" }} onClick={() => onSave([...selected])}>
-        Tạo phiếu ({selected.size} NVL) 📋
+      <Btn variant="primary" disabled={selected.size === 0} style={{ width: "100%" }} onClick={() => onSave([...selected])}>
+        Tạo phiếu ({selected.size} NVL)
       </Btn>
     </Modal>
   );
@@ -1923,7 +1910,7 @@ function WriteOffModal({ batch, material, onClose, onSave }) {
   const [note, setNote] = useState("");
 
   return (
-    <Modal title={`Ghi nhận hao hụt — ${material.emoji} ${material.name}`} onClose={onClose}>
+    <Modal title={`Ghi nhận hao hụt — ${material.name}`} onClose={onClose}>
       <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>
         Lô <b style={{ color: T.text }}>{batch.id}</b> · còn {batch.remainingQty.toLocaleString("vi-VN")}{material.unit}
       </div>
@@ -1933,8 +1920,8 @@ function WriteOffModal({ batch, material, onClose, onSave }) {
             key={t}
             onClick={() => setTxType(t)}
             style={{
-              flex: 1, padding: "8px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-              border: `2px solid ${txType === t ? T.red : T.line}`, background: txType === t ? "#FBE3DA" : "#fff", color: txType === t ? T.redDeep : T.muted,
+              flex: 1, padding: "9px", borderRadius: 0, cursor: "pointer", fontFamily: "'Josefin Sans',sans-serif", fontSize: 10, fontWeight: 300, letterSpacing: "0.12em", textTransform: "uppercase",
+              border: `1px solid ${txType === t ? T.redDeep : T.line}`, background: "transparent", color: txType === t ? T.redDeep : T.muted,
             }}
           >
             {TX_TYPE_LABELS[t]}
@@ -1943,8 +1930,8 @@ function WriteOffModal({ batch, material, onClose, onSave }) {
       </div>
       <Input label={`Số lượng hao hụt (${material.unit})`} type="number" value={qty} onChange={setQty} />
       <Input label="Ghi chú" value={note} onChange={setNote} placeholder="VD: vỡ khi vận chuyển nội bộ" />
-      <Btn primary disabled={qty <= 0 || qty > batch.remainingQty} style={{ width: "100%" }} onClick={() => onSave(txType, qty, note)}>
-        Ghi nhận 📉
+      <Btn variant="primary" disabled={qty <= 0 || qty > batch.remainingQty} style={{ width: "100%" }} onClick={() => onSave(txType, qty, note)}>
+        Ghi nhận
       </Btn>
     </Modal>
   );
@@ -1962,20 +1949,20 @@ function CustomerReturnModal({ order, onClose, onSave }) {
         const r = RECIPES[it.productId];
         return (
           <div key={it.productId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px dashed ${T.line}` }}>
-            <div style={{ flex: 1, fontSize: 12.5 }}>{r?.emoji} {r?.name} <span style={{ color: T.muted, fontSize: 10.5 }}>(đã mua {it.qty})</span></div>
+            <div style={{ flex: 1, fontSize: 12.5 }}>{r?.name} <span style={{ color: T.muted, fontSize: 10.5 }}>(đã mua {it.qty})</span></div>
             <input
               type="number"
               min="0"
               max={it.qty}
               value={qtys[it.productId]}
               onChange={(e) => setQtys((q) => ({ ...q, [it.productId]: Math.min(it.qty, Math.max(0, parseInt(e.target.value) || 0)) }))}
-              style={{ width: 60, padding: "4px 6px", fontSize: 12, border: `1px solid ${T.line}`, borderRadius: 6, outline: "none", textAlign: "center" }}
+              style={{ width: 60, padding: "4px 6px", fontSize: 12, border: `1px solid ${T.line}`, borderRadius: 0, outline: "none", textAlign: "center" }}
             />
           </div>
         );
       })}
-      <Btn primary disabled={totalReturn <= 0} style={{ width: "100%", marginTop: 14 }} onClick={() => onSave(qtys)}>
-        Xác nhận trả hàng ({totalReturn}) ↩️
+      <Btn variant="primary" disabled={totalReturn <= 0} style={{ width: "100%", marginTop: 14 }} onClick={() => onSave(qtys)}>
+        Xác nhận trả hàng ({totalReturn})
       </Btn>
     </Modal>
   );

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { T } from "../data/theme";
+import { T, TYPE } from "../data/theme";
 import { JAR_TYPES, WAX, FRAGS, JAR_COLORS, WICKS } from "../data/recipes";
 import { Card, Btn } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
@@ -8,11 +8,11 @@ import { CheckoutModal } from "./CheckoutModal";
 import { fmtVND } from "../utils/formatters";
 
 const SIM_STEPS = [
-  { emoji: "🫙", label: "Kiểu lọ" },
-  { emoji: "🧈", label: "Sáp" },
-  { emoji: "🌸", label: "Mùi hương" },
-  { emoji: "🎀", label: "Trang trí lọ" },
-  { emoji: "✨", label: "Hoàn thiện" },
+  { label: "VESSEL" },
+  { label: "WAX" },
+  { label: "SCENT" },
+  { label: "COLOUR" },
+  { label: "FINISH" },
 ];
 
 export function SimulationTab({ db, setDb, identity, showToast }) {
@@ -25,7 +25,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
   const [engraving, setEngraving] = useState("");
   const [wick, setWick] = useState("md");
   const [lit, setLit] = useState(false);
-  const [famFilter, setFam] = useState("Tất cả");
+  const [famFilter, setFam] = useState("ALL");
   const [buyOpen, setBuyOpen] = useState(false);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
         notes.top += f.top * w;
         notes.mid += f.mid * w;
         notes.base += f.base * w;
-        
+
         if (f.top * w > maxTop) { maxTop = f.top * w; dominantNotes.top = f.name.toLowerCase(); }
         if (f.mid * w > maxMid) { maxMid = f.mid * w; dominantNotes.mid = f.name.toLowerCase(); }
         if (f.base * w > maxBase) { maxBase = f.base * w; dominantNotes.base = f.name.toLowerCase(); }
@@ -85,11 +85,11 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     });
 
     const issues = [];
-    if (totalLoad > wax.loadMax) issues.push(`Tổng dầu thơm ${totalLoad}% vượt mức ${wax.loadMax}% của ${wax.name} 💦`);
-    if (totalLoad < 4 && totalLoad > 0) issues.push("Dầu thơm hơi ít — mùi sẽ nhẹ lắm đó 🥺");
-    if (totalLoad === 0) issues.push("Chưa chọn mùi hương nào hết!");
-    if (meltData[3]["Thực tế"] < jarType.diam * 0.6) issues.push("Melt pool nhỏ — thử bấc to hơn nha 🕯️");
-    if (burnH < 8) issues.push("Nến cháy khá nhanh với kiểu lọ này");
+    if (totalLoad > wax.loadMax) issues.push(`Tổng dầu thơm ${totalLoad}% vượt mức ${wax.loadMax}% của ${wax.name}`);
+    if (totalLoad < 4 && totalLoad > 0) issues.push("Dầu thơm hơi ít — mùi sẽ nhẹ.");
+    if (totalLoad === 0) issues.push("Chưa chọn mùi hương nào.");
+    if (meltData[3]["Thực tế"] < jarType.diam * 0.6) issues.push("Melt pool nhỏ — thử bấc to hơn.");
+    if (burnH < 8) issues.push("Nến cháy khá nhanh với kiểu lọ này.");
 
     const bom = [
       [`wax-${waxType === "soybee" ? "soy" : (waxType === "beeswax" ? "bee" : waxType)}`, Math.round(waxG * (waxType === "soybee" ? 0.8 : 1))],
@@ -120,8 +120,8 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     };
   }, [waxType, blend, totalLoad, jarType, wick, wax, db.materials]);
 
-  const fams = ["Tất cả", ...new Set(FRAGS.map((f) => f.family))];
-  const shownFrags = famFilter === "Tất cả" ? FRAGS : FRAGS.filter((f) => f.family === famFilter);
+  const fams = ["ALL", ...new Set(FRAGS.map((f) => f.family))];
+  const shownFrags = famFilter === "ALL" ? FRAGS : FRAGS.filter((f) => f.family === famFilter);
   const toggleFrag = (id) =>
     setBlend((b) => {
       const nb = { ...b };
@@ -130,7 +130,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
       return nb;
     });
 
-  const ttStyle = { background: T.card, border: `1.5px solid ${T.line}`, borderRadius: 12, fontSize: 11, color: T.text };
+  const ttStyle = { background: T.card, border: `1px solid ${T.line}`, borderRadius: 0, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", color: T.text };
 
   const confirmBuy = (who) => {
     let customer = db.customers.find((c) => c.phone === who.phone && who.phone);
@@ -167,43 +167,66 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
     };
     setDb((d) => ({ ...d, customers, orders: [...d.orders, order], nextOrderNum: d.nextOrderNum + 1, nextCustNum }));
     setBuyOpen(false);
-    showToast(`Tuyệt vời ${who.name}! Đơn ${order.id} — cây nến mơ ước của bạn đang được ghi nhận 💗`);
+    showToast(`${who.name} — Order ${order.id} confirmed.`);
   };
 
   return (
     <div>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Mô phỏng pha chế nến 🧪</div>
-      <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>Thiết kế cây nến của riêng bạn — xong có thể đặt mua luôn!</div>
+      <div style={{ ...TYPE.eyebrow, color: T.muted, marginBottom: 8 }}>SOLACE ATELIER</div>
+      <div style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 8 }}>Mô phỏng pha chế nến</div>
+      <div style={{ fontSize: 12, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 28 }}>
+        Compose your candle at the SOLACE Atelier
+      </div>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}>
         {SIM_STEPS.map((s, i) => {
           const active = i === step,
             done = i < step,
             reachable = i <= maxReached;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", flex: i < SIM_STEPS.length - 1 ? 1 : "0 0 auto" }}>
               <button
                 onClick={() => reachable && setStep(i)}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
-                  padding: active ? "7px 15px" : "7px 11px",
-                  borderRadius: 999,
+                  gap: 8,
                   border: "none",
+                  background: "none",
                   cursor: reachable ? "pointer" : "default",
-                  fontFamily: "inherit",
-                  background: active ? T.pink : done ? T.pinkSoft : "#fff",
-                  color: active ? "#fff" : done ? T.pinkDeep : "#C9B99A",
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  boxShadow: active ? "0 3px 10px rgba(143,108,59,0.35)" : "none",
+                  padding: 0,
+                  flexShrink: 0,
                 }}
               >
-                <span style={{ fontSize: 14 }}>{done ? "💗" : s.emoji}</span>
-                {active && s.label}
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: `1px solid ${done ? T.gold : active ? T.text : T.line}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 9,
+                    fontFamily: "'Josefin Sans',sans-serif",
+                    letterSpacing: "0.05em",
+                    background: done ? T.gold : "transparent",
+                    color: done ? T.card : active ? T.text : T.muted,
+                    flexShrink: 0,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <div
+                  style={{
+                    ...TYPE.eyebrow,
+                    color: active ? T.text : done ? T.gold : T.muted,
+                  }}
+                >
+                  {s.label}
+                </div>
               </button>
-              {i < SIM_STEPS.length - 1 && <div style={{ width: 12, height: 2.5, borderRadius: 2, background: i < step ? T.pink : T.line }} />}
+              {i < SIM_STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: i < step ? T.gold : T.lineHair, margin: "0 10px" }} />}
             </div>
           );
         })}
@@ -211,9 +234,12 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 0 && (
         <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Chọn kiểu lọ 🫙</div>
-          <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 14 }}>10 mẫu lọ thật — mỗi mẫu một phong cách riêng</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 10 }}>
+          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 01</div>
+          <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Choose Your Vessel</div>
+          <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 20 }}>
+            10 vessel forms, each with a distinct character
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 10 }}>
             {JAR_TYPES.map((jt2) => {
               const active = jarTypeId === jt2.id;
               return (
@@ -221,27 +247,28 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   key={jt2.id}
                   onClick={() => setJarTypeId(jt2.id)}
                   style={{
-                    padding: "10px 6px",
-                    borderRadius: 16,
+                    padding: "12px 6px",
+                    borderRadius: 0,
                     cursor: "pointer",
                     textAlign: "center",
-                    border: `2.5px solid ${active ? T.pink : T.line}`,
-                    background: active ? T.pinkSoft : "#fff",
+                    border: `1px solid ${active ? T.gold : T.line}`,
+                    background: active ? T.goldLight : "transparent",
                     fontFamily: "inherit",
-                    boxShadow: active ? "0 3px 12px rgba(143,108,59,0.3)" : "none",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <JarCandle jarTypeId={jt2.id} rgb={WAX[waxType].base} lit={false} size={56} />
                   </div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, marginTop: 4, color: active ? T.pinkDeep : T.text }}>{jt2.name}</div>
+                  <div style={{ fontSize: 9.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, letterSpacing: "0.04em", marginTop: 6, color: active ? T.text : T.muted }}>
+                    {jt2.name}
+                  </div>
                 </button>
               );
             })}
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <Btn primary onClick={() => setStep(1)}>
-              Tiếp theo 🧈
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+            <Btn variant="primary" onClick={() => setStep(1)}>
+              Next →
             </Btn>
           </div>
         </Card>
@@ -249,8 +276,9 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 1 && (
         <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Chọn loại sáp 🧈</div>
-          <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 14 }}>Mỗi loại sáp cho cảm giác khác nhau</div>
+          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 02</div>
+          <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Select Your Wax</div>
+          <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 20 }}>Mỗi loại sáp cho cảm giác khác nhau</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {Object.entries(WAX).map(([k, w]) => {
               const active = waxType === k;
@@ -259,27 +287,25 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   key={k}
                   onClick={() => setWaxType(k)}
                   style={{
-                    padding: "16px 14px",
-                    borderRadius: 18,
+                    padding: "18px 16px",
+                    borderRadius: 0,
                     cursor: "pointer",
                     textAlign: "left",
-                    border: `2.5px solid ${active ? T.pink : T.line}`,
-                    background: active ? T.pinkSoft : "#fff",
+                    border: `1px solid ${active ? T.gold : T.line}`,
+                    background: active ? T.goldLight : "transparent",
                     fontFamily: "inherit",
-                    boxShadow: active ? "0 3px 12px rgba(143,108,59,0.3)" : "none",
                   }}
                 >
-                  <div style={{ fontSize: 26, marginBottom: 6 }}>{w.emoji}</div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: active ? T.pinkDeep : T.text }}>{w.name}</div>
-                  <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3 }}>{w.desc}</div>
+                  <div style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>{w.name}</div>
+                  <div style={{ fontSize: 10.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted }}>{w.desc}</div>
                 </button>
               );
             })}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-            <Btn onClick={() => setStep(0)}>← Quay lại</Btn>
-            <Btn primary onClick={() => setStep(2)}>
-              Tiếp theo 🌸
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+            <Btn onClick={() => setStep(0)}>← Back</Btn>
+            <Btn variant="primary" onClick={() => setStep(2)}>
+              Next →
             </Btn>
           </div>
         </Card>
@@ -287,32 +313,35 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 2 && (
         <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Pha chế mùi hương 🌸</div>
-          <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 12 }}>
-            Chọn tối đa 4 mùi — tổng nên dưới <b style={{ color: T.pinkDeep }}>{wax.loadMax}%</b>
+          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 03</div>
+          <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>Compose Your Scent</div>
+          <div style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 16 }}>
+            Chọn tối đa 4 mùi — tổng nên dưới <b style={{ color: T.gold, fontWeight: 600 }}>{wax.loadMax}%</b>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20, borderBottom: `1px solid ${T.lineHair}` }}>
             {fams.map((f) => (
               <button
                 key={f}
                 onClick={() => setFam(f)}
                 style={{
-                  padding: "7px 13px",
-                  borderRadius: 999,
+                  background: "none",
+                  border: "none",
                   cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: famFilter === f ? 700 : 500,
-                  fontFamily: "inherit",
-                  border: `2px solid ${famFilter === f ? T.pink : T.line}`,
-                  background: famFilter === f ? T.pinkSoft : "#fff",
-                  color: famFilter === f ? T.pinkDeep : T.muted,
+                  fontFamily: "'Josefin Sans',sans-serif",
+                  fontSize: 10,
+                  fontWeight: 300,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: famFilter === f ? T.text : T.muted,
+                  paddingBottom: 8,
+                  borderBottom: famFilter === f ? `1px solid ${T.text}` : "1px solid transparent",
                 }}
               >
                 {f}
               </button>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
             {shownFrags.map((f) => {
               const sel = blend[f.id] !== undefined;
               return (
@@ -322,37 +351,33 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 9,
-                    padding: "10px 12px",
-                    borderRadius: 16,
+                    gap: 10,
+                    padding: "12px 14px",
+                    borderRadius: 0,
                     cursor: "pointer",
                     textAlign: "left",
                     fontFamily: "inherit",
-                    border: `2.5px solid ${sel ? T.pink : T.line}`,
-                    background: sel ? T.pinkSoft : "#fff",
+                    border: `1px solid ${sel ? T.gold : T.line}`,
+                    background: sel ? T.goldLight : "transparent",
                   }}
                 >
-                  <span style={{ fontSize: 20 }}>{f.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: sel ? T.pinkDeep : T.text }}>{f.name}</div>
-                    <div style={{ fontSize: 10, color: T.muted }}>{f.family}</div>
+                    <div style={{ fontSize: 13, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text }}>{f.name}</div>
+                    <div style={{ ...TYPE.eyebrow, color: T.muted, marginTop: 4 }}>{f.family}</div>
                   </div>
-                  {sel && <span style={{ fontSize: 13 }}>💗</span>}
                 </button>
               );
             })}
           </div>
           {Object.keys(blend).length > 0 && (
-            <div style={{ background: T.soft, borderRadius: 16, padding: "12px 14px", marginBottom: 12 }}>
+            <div style={{ background: T.soft, borderRadius: 0, padding: "16px 18px", marginBottom: 16, border: `1px solid ${T.lineHair}` }}>
               {Object.entries(blend).map(([id, pct]) => {
                 const f = FRAGS.find((x) => x.id === id);
                 return (
-                  <div key={id} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 4 }}>
-                      <span>
-                        {f.emoji} {f.name}
-                      </span>
-                      <span style={{ fontWeight: 700, color: T.pinkDeep }}>{pct}%</span>
+                  <div key={id} style={{ marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, marginBottom: 6 }}>
+                      <span>{f.name}</span>
+                      <span style={{ fontWeight: 600, color: T.gold }}>{pct}%</span>
                     </div>
                     <input
                       type="range"
@@ -361,13 +386,13 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                       step={0.5}
                       value={pct}
                       onChange={(e) => setBlend((b) => ({ ...b, [id]: +e.target.value }))}
-                      style={{ width: "100%", accentColor: T.pink }}
+                      style={{ width: "100%", accentColor: T.gold }}
                     />
                   </div>
                 );
               })}
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: `1.5px dashed ${T.line}`, fontSize: 12.5, fontWeight: 700 }}>
-                <span>Tổng load</span>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 10, borderTop: `1px solid ${T.line}`, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                <span>Fragrance Load</span>
                 <span style={{ color: totalLoad > wax.loadMax ? T.redDeep : T.greenDeep }}>
                   {totalLoad}% / {wax.loadMax}%
                 </span>
@@ -375,9 +400,9 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <Btn onClick={() => setStep(1)}>← Quay lại</Btn>
-            <Btn primary disabled={totalLoad === 0} onClick={() => setStep(3)}>
-              Trang trí lọ 🎀
+            <Btn onClick={() => setStep(1)}>← Back</Btn>
+            <Btn variant="primary" disabled={totalLoad === 0} onClick={() => setStep(3)}>
+              Next →
             </Btn>
           </div>
         </Card>
@@ -385,14 +410,15 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
 
       {step === 3 && (
         <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Trang trí lọ nến 🎀</div>
-          <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ background: T.soft, borderRadius: 20, padding: "12px 16px", display: "flex", justifyContent: "center" }}>
+          <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 04</div>
+          <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 16 }}>Colour Your Candle</div>
+          <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ background: T.dark, borderRadius: 0, padding: "20px 24px", display: "flex", justifyContent: "center" }}>
               <JarCandle jarTypeId={jarTypeId} rgb={rgb} lit={false} size={110} />
             </div>
             <div style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Màu vỏ lọ</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 12 }}>
+              <div style={{ ...TYPE.label, color: T.muted, marginBottom: 10 }}>Màu vỏ lọ</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
                 {JAR_COLORS.map((d) => {
                   const active = jarColor === d.id;
                   return (
@@ -401,26 +427,26 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                       onClick={() => setJarColor(d.id)}
                       style={{
                         aspectRatio: "1",
-                        borderRadius: 12,
+                        borderRadius: 0,
                         cursor: "pointer",
-                        border: `3px solid ${active ? T.pinkDeep : T.line}`,
-                        background: d.hex ?? "#fff",
+                        border: `1px solid ${active ? T.gold : T.line}`,
+                        background: d.hex ?? "transparent",
                         fontFamily: "inherit",
-                        fontSize: 12,
-                        transform: active ? "scale(1.08)" : "scale(1)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: d.hex === "#2C2C2E" ? "#fff" : "#000"
+                        color: d.hex === "#2C2C2E" ? "#fff" : T.text,
                       }}
                     >
-                      <span style={{ fontSize: 10, fontWeight: 700 }}>{d.name.split(" ")[0]}</span>
+                      <span style={{ fontSize: 9, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                        {d.name.split(" ")[0]}
+                      </span>
                     </button>
                   );
                 })}
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Khắc chữ (Tùy chọn)</div>
+                <div style={{ ...TYPE.label, color: T.muted, marginBottom: 8 }}>Khắc chữ (Tùy chọn)</div>
                 <input
                   type="text"
                   placeholder="Ví dụ: Happy Birthday Vy"
@@ -428,74 +454,65 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
                   onChange={(e) => setEngraving(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: 12,
-                    border: `1.5px solid ${T.line}`,
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    background: "#fff",
-                    boxSizing: "border-box"
+                    padding: "10px 0",
+                    border: "none",
+                    borderBottom: `1px solid ${T.line}`,
+                    fontFamily: "'Josefin Sans',sans-serif",
+                    fontSize: 13,
+                    fontWeight: 300,
+                    background: "transparent",
+                    boxSizing: "border-box",
+                    outline: "none",
                   }}
                   maxLength={30}
                 />
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-            <Btn onClick={() => setStep(2)}>← Quay lại</Btn>
-            <Btn primary onClick={() => setStep(4)}>
-              Hoàn thiện ✨
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+            <Btn onClick={() => setStep(2)}>← Back</Btn>
+            <Btn variant="primary" onClick={() => setStep(4)}>
+              Next →
             </Btn>
           </div>
         </Card>
       )}
 
       {step === 4 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Card>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ background: T.soft, borderRadius: 20, padding: "10px 14px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 10 }}>STEP 05</div>
+            <div style={{ fontSize: 20, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 16 }}>Your Creation</div>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              <div style={{ background: T.dark, borderRadius: 0, padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                 <JarCandle jarTypeId={jarTypeId} rgb={rgb} lit={lit} size={100} />
-                <button
-                  onClick={() => setLit((v) => !v)}
-                  style={{
-                    marginTop: 6,
-                    padding: "5px 14px",
-                    borderRadius: 999,
-                    cursor: "pointer",
-                    border: "none",
-                    fontFamily: "inherit",
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    background: lit ? T.yellow : "#fff",
-                    color: lit ? "#7A5A1E" : T.muted,
-                    boxShadow: lit ? "0 2px 8px rgba(240,218,156,0.6)" : `inset 0 0 0 2px ${T.line}`,
-                  }}
-                >
-                  {lit ? "🔥 Đang cháy" : "🕯️ Đốt thử"}
-                </button>
+                <Btn small variant={lit ? "gold" : "ghost"} onClick={() => setLit((v) => !v)} style={lit ? {} : { color: `${T.card}88`, borderColor: `${T.card}30` }}>
+                  {lit ? "EXTINGUISH" : "IGNITE"}
+                </Btn>
               </div>
               <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 6 }}>{jarType.name}</div>
-                <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>
+                <div style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 6 }}>{jarType.name}</div>
+                <div style={{ fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 16 }}>
                   Ø{jarType.diam}cm · cao {jarType.height}cm
                 </div>
-                <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 6 }}>Cỡ bấc</div>
-                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                <div style={{ ...TYPE.label, color: T.muted, marginBottom: 8 }}>Cỡ bấc</div>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", borderBottom: `1px solid ${T.lineHair}` }}>
                   {WICKS.map((w) => (
                     <button
                       key={w.id}
                       onClick={() => setWick(w.id)}
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: 999,
+                        background: "none",
+                        border: "none",
                         cursor: "pointer",
-                        fontSize: 11.5,
-                        fontWeight: wick === w.id ? 700 : 500,
-                        fontFamily: "inherit",
-                        border: `2px solid ${wick === w.id ? T.pink : T.line}`,
-                        background: wick === w.id ? T.pinkSoft : "#fff",
-                        color: wick === w.id ? T.pinkDeep : T.muted,
+                        fontFamily: "'Josefin Sans',sans-serif",
+                        fontSize: 10,
+                        fontWeight: 300,
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        color: wick === w.id ? T.text : T.muted,
+                        paddingBottom: 8,
+                        borderBottom: wick === w.id ? `1px solid ${T.gold}` : "1px solid transparent",
                       }}
                     >
                       {w.name}
@@ -509,30 +526,29 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
           <Card>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
               {[
-                ["🧈", "Sáp", `${calc.waxG}g`],
-                ["💧", "Tinh dầu", `${calc.fragG}g`],
-                ["⏰", "Cháy", `${calc.burnH}h`],
-                ["🏠", "Phủ phòng", `${calc.roomM2}m²`],
-              ].map(([e, l, v]) => (
-                <div key={l} style={{ background: T.soft, borderRadius: 14, padding: "10px 6px", textAlign: "center" }}>
-                  <div style={{ fontSize: 17 }}>{e}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{v}</div>
-                  <div style={{ fontSize: 10, color: T.muted }}>{l}</div>
+                ["Sáp", `${calc.waxG}g`],
+                ["Tinh dầu", `${calc.fragG}g`],
+                ["Cháy", `${calc.burnH}h`],
+                ["Phủ phòng", `${calc.roomM2}m²`],
+              ].map(([l, v]) => (
+                <div key={l} style={{ textAlign: "center", padding: "14px 4px", borderTop: `2px solid ${T.gold}` }}>
+                  <div style={{ ...TYPE.stat, color: T.text }}>{v}</div>
+                  <div style={{ ...TYPE.eyebrow, color: T.muted, marginTop: 6 }}>{l}</div>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 20 }}>
               {[
-                ["❄️ Cold throw", calc.cold, T.blue],
-                ["🔥 Hot throw", calc.hot, "#E0AA5E"],
+                ["Cold throw", calc.cold, T.blueDeep],
+                ["Hot throw", calc.hot, T.goldDeep],
               ].map(([label, val, color]) => (
-                <div key={label} style={{ marginBottom: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 4 }}>
+                <div key={label} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
                     <span style={{ color: T.muted }}>{label}</span>
-                    <span style={{ fontWeight: 700 }}>{val}/10</span>
+                    <span style={{ fontWeight: 600, color: T.text }}>{val}/10</span>
                   </div>
-                  <div style={{ height: 7, background: T.pinkSoft, borderRadius: 99, overflow: "hidden" }}>
-                    <div style={{ width: `${val * 10}%`, height: "100%", background: color, borderRadius: 99 }} />
+                  <div style={{ height: 3, background: T.lineHair, overflow: "hidden" }}>
+                    <div style={{ width: `${val * 10}%`, height: "100%", background: color }} />
                   </div>
                 </div>
               ))}
@@ -540,58 +556,58 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
           </Card>
 
           <Card>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Diễn biến mùi hương 🌸</div>
+            <div style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 12 }}>Diễn biến mùi hương</div>
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={calc.scentData} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={T.line} />
+                <CartesianGrid strokeDasharray="3 3" stroke={T.lineHair} />
                 <XAxis dataKey="t" tick={{ fontSize: 9, fill: T.muted }} interval={2} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 9, fill: T.muted }} />
                 <Tooltip contentStyle={ttStyle} />
-                <Area type="monotone" dataKey="Nốt cao" stroke={T.blueDeep} fill={T.blue} fillOpacity={0.4} strokeWidth={2} />
-                <Area type="monotone" dataKey="Nốt giữa" stroke={T.lilacDeep} fill={T.lilac} fillOpacity={0.4} strokeWidth={2} />
-                <Area type="monotone" dataKey="Nốt trầm" stroke="#B9862A" fill="#E9CB86" fillOpacity={0.4} strokeWidth={2} />
+                <Area type="monotone" dataKey="Nốt cao" stroke={T.blueDeep} fill={T.blue} fillOpacity={0.6} strokeWidth={1.5} />
+                <Area type="monotone" dataKey="Nốt giữa" stroke={T.lilacDeep} fill={T.lilac} fillOpacity={0.6} strokeWidth={1.5} />
+                <Area type="monotone" dataKey="Nốt trầm" stroke={T.goldDeep} fill={T.goldLight} fillOpacity={0.6} strokeWidth={1.5} />
               </AreaChart>
             </ResponsiveContainer>
-            
-            <div style={{ marginTop: 12, fontSize: 11, color: T.text, lineHeight: 1.6, background: T.soft, padding: "12px", borderRadius: 12, border: `1px solid ${T.line}` }}>
-              <div style={{ marginBottom: 6 }}>
-                <span style={{ color: T.blueDeep, fontWeight: 700 }}>🔵 Nốt cao (Top):</span> Ấn tượng đầu tiên khi vừa đốt nến bật lên hương <b>{calc.dominantNotes.top || "thanh mát"}</b>. Lan tỏa nhanh, rực rỡ nhưng cũng bay hơi nhanh nhất.
+
+            <div style={{ marginTop: 16, fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.text, lineHeight: 1.8, background: T.soft, padding: "16px 18px", border: `1px solid ${T.lineHair}` }}>
+              <div style={{ marginBottom: 10 }}>
+                <span style={{ color: T.blueDeep, fontWeight: 600 }}>Nốt cao (Top):</span> Ấn tượng đầu tiên khi vừa đốt nến bật lên hương <b>{calc.dominantNotes.top || "thanh mát"}</b>. Lan tỏa nhanh, rực rỡ nhưng cũng bay hơi nhanh nhất.
               </div>
-              <div style={{ marginBottom: 6 }}>
-                <span style={{ color: T.lilacDeep, fontWeight: 700 }}>🟣 Nốt giữa (Heart):</span> &ldquo;Linh hồn&rdquo; của hũ nến mang đậm hương <b>{calc.dominantNotes.mid || "ngọt ngào"}</b>. Tỏa hương sau 10-20 phút và kéo dài trong suốt quá trình đốt.
+              <div style={{ marginBottom: 10 }}>
+                <span style={{ color: T.lilacDeep, fontWeight: 600 }}>Nốt giữa (Heart):</span> &ldquo;Linh hồn&rdquo; của hũ nến mang đậm hương <b>{calc.dominantNotes.mid || "ngọt ngào"}</b>. Tỏa hương sau 10-20 phút và kéo dài trong suốt quá trình đốt.
               </div>
               <div>
-                <span style={{ color: "#B9862A", fontWeight: 700 }}>🟤 Nốt trầm (Base):</span> Dày dặn và ấm áp từ <b>{calc.dominantNotes.base || "gỗ"}</b>. Lưu lại lâu nhất trong không gian ngay cả khi đã tắt nến.
+                <span style={{ color: T.goldDeep, fontWeight: 600 }}>Nốt trầm (Base):</span> Dày dặn và ấm áp từ <b>{calc.dominantNotes.base || "gỗ"}</b>. Lưu lại lâu nhất trong không gian ngay cả khi đã tắt nến.
               </div>
             </div>
           </Card>
 
           {calc.issues.length > 0 && (
-            <Card style={{ background: "#FBF0DC", border: "1.5px solid #E9D19E" }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#9C7526", marginBottom: 6 }}>💡 Mẹo nhỏ</div>
+            <Card style={{ background: T.amber, border: `1px solid ${T.line}` }}>
+              <div style={{ fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: T.amberDeep, marginBottom: 10 }}>! Lưu ý</div>
               {calc.issues.map((x, i) => (
-                <div key={i} style={{ fontSize: 11.5, color: "#8A6829", lineHeight: 1.7 }}>
-                  • {x}
+                <div key={i} style={{ fontSize: 11.5, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.amberDeep, lineHeight: 1.8 }}>
+                  — {x}
                 </div>
               ))}
             </Card>
           )}
 
-          <Card style={{ background: T.pinkSoft, border: `1.5px solid ${T.pink}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <Card style={{ background: T.dark, border: `1px solid ${T.dark}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.pinkDeep }}>Thích cây nến này chưa? 🥰</div>
-                <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>{fmtVND(calc.price)}</div>
-                <div style={{ fontSize: 10.5, color: T.muted }}>Giá ước tính theo nguyên liệu thực tế</div>
+                <div style={{ ...TYPE.eyebrow, color: T.gold, marginBottom: 8 }}>Thích cây nến này chưa?</div>
+                <div style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.card }}>{fmtVND(calc.price)}</div>
+                <div style={{ fontSize: 10, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: `${T.card}88`, marginTop: 4 }}>Giá ước tính theo nguyên liệu thực tế</div>
               </div>
-              <Btn primary onClick={() => setBuyOpen(true)}>
-                🛒 Đặt mua cây nến này
+              <Btn variant="gold" onClick={() => setBuyOpen(true)}>
+                Commission This Piece
               </Btn>
             </div>
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <Btn onClick={() => setStep(0)}>🔄 Thử lại từ đầu</Btn>
+            <Btn onClick={() => setStep(0)}>Thử lại từ đầu</Btn>
             <Btn onClick={() => setStep(3)}>← Trang trí lại</Btn>
           </div>
         </div>
@@ -600,7 +616,7 @@ export function SimulationTab({ db, setDb, identity, showToast }) {
       {buyOpen && (
         <CheckoutModal
           identity={identity}
-          summaryLines={[{ label: `${jarType.emoji} Nến tự thiết kế (${jarType.name})`, amount: calc.price }]}
+          summaryLines={[{ label: `Nến tự thiết kế (${jarType.name})`, amount: calc.price }]}
           total={calc.price}
           onClose={() => setBuyOpen(false)}
           onConfirm={confirmBuy}

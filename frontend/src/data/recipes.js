@@ -1,15 +1,15 @@
 // ═══════════════════ JAR TYPES — 10 mẫu lọ cố định ═══════════════════
 export const JAR_TYPES = [
-  { id: "round",   name: "Lọ tròn cổ điển",      emoji: "🫙", diam: 8,   height: 10, factor: 0.88, lid: "none"  },
-  { id: "square",  name: "Hộp vuông kem",         emoji: "🧊", diam: 8,   height: 9,  factor: 0.82, lid: "wood"  },
-  { id: "cone",    name: "Ly nến hình nón",       emoji: "🍧", diam: 7,   height: 8,  factor: 0.75, lid: "none"  },
-  { id: "tall",    name: "Trụ cao thanh lịch",    emoji: "📏", diam: 6,   height: 14, factor: 0.90, lid: "none"  },
-  { id: "bottle",  name: "Chai thủy tinh cổ dài", emoji: "🍾", diam: 9,   height: 16, factor: 0.55, lid: "cork"  },
-  { id: "tin",     name: "Hũ thiếc mini",         emoji: "🥫", diam: 6,   height: 4,  factor: 0.90, lid: "tin"   },
-  { id: "bowl",    name: "Bát gốm rộng",          emoji: "🥣", diam: 11,  height: 5,  factor: 0.85, lid: "none"  },
-  { id: "heart",   name: "Lọ trái tim",           emoji: "💗", diam: 8,   height: 7,  factor: 0.65, lid: "none"  },
-  { id: "hexagon", name: "Lọ lục giác",           emoji: "⬡",  diam: 8,   height: 10, factor: 0.80, lid: "none"  },
-  { id: "mason",   name: "Hũ mason cổ điển",      emoji: "🏺", diam: 8.5, height: 11, factor: 0.85, lid: "mason" },
+  { id: "round",   name: "Classic Round",  emoji: "🫙", diam: 8,   height: 10, factor: 0.88, lid: "none"  },
+  { id: "square",  name: "Square",         emoji: "🧊", diam: 8,   height: 9,  factor: 0.82, lid: "wood"  },
+  { id: "cone",    name: "Cone",           emoji: "🍧", diam: 7,   height: 8,  factor: 0.75, lid: "none"  },
+  { id: "tall",    name: "Tall Cylinder",  emoji: "📏", diam: 6,   height: 14, factor: 0.90, lid: "none"  },
+  { id: "bottle",  name: "Glass Bottle",   emoji: "🍾", diam: 9,   height: 16, factor: 0.55, lid: "cork"  },
+  { id: "tin",     name: "Tin",            emoji: "🥫", diam: 6,   height: 4,  factor: 0.90, lid: "tin"   },
+  { id: "bowl",    name: "Ceramic Bowl",   emoji: "🥣", diam: 11,  height: 5,  factor: 0.85, lid: "none"  },
+  { id: "heart",   name: "Heart",          emoji: "💗", diam: 8,   height: 7,  factor: 0.65, lid: "none"  },
+  { id: "hexagon", name: "Hexagon",        emoji: "⬡",  diam: 8,   height: 10, factor: 0.80, lid: "none"  },
+  { id: "mason",   name: "Mason",          emoji: "🏺", diam: 8.5, height: 11, factor: 0.85, lid: "mason" },
 ];
 
 // ═══════════════════ SÁP ═══════════════════
@@ -54,10 +54,10 @@ export const WICKS = [
 
 // ═══════════════════ DÒNG SẢN PHẨM ═══════════════════
 export const LINES = [
-  { id: "floral", name: "Dòng Hoa Cỏ",   emoji: "🌸" },
-  { id: "fruity", name: "Dòng Trái Cây", emoji: "🍑" },
-  { id: "woody",  name: "Dòng Gỗ Ấm",    emoji: "🪵" },
-  { id: "fresh",  name: "Dòng Tươi Mát", emoji: "🌿" },
+  { id: "floral", name: "Florale",  label: "01", tagline: "Hoa · Cỏ · Tinh khiết", emoji: "🌸" },
+  { id: "fruity", name: "Lumière",  label: "02", tagline: "Trái cây · Tươi sáng",  emoji: "🍑" },
+  { id: "woody",  name: "Noir",     label: "03", tagline: "Gỗ · Trầm · Ấm áp",     emoji: "🪵" },
+  { id: "fresh",  name: "Verte",    label: "04", tagline: "Thảo mộc · Trong lành", emoji: "🌿" },
 ];
 
 // ═══════════════════ GIÁ THANH LÝ 3 CẤP (F15) ═══════════════════

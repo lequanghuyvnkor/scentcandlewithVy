@@ -27,18 +27,20 @@ export default function App() {
     return (
       <div
         style={{
-          fontFamily: "'Quicksand', sans-serif",
+          fontFamily: "'Josefin Sans',sans-serif",
           background: T.bg,
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: T.pinkDeep,
-          fontSize: 15,
-          fontWeight: 700,
+          color: T.muted,
+          fontSize: 11,
+          fontWeight: 300,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
         }}
       >
-        🕯️ Đang mở cửa tiệm...
+        Đang mở cửa tiệm...
       </div>
     );
   }
@@ -46,14 +48,14 @@ export default function App() {
   return (
     <div
       style={{
-        fontFamily: "'Quicksand','Segoe UI',sans-serif",
+        fontFamily: "'Josefin Sans','Segoe UI',sans-serif",
         background: T.bg,
         minHeight: "100vh",
         color: T.text,
-        padding: "18px 14px 40px",
+        padding: "28px 20px 60px",
       }}
     >
-      <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@200;300;400;600&display=swap" rel="stylesheet" />
 
       <Header
         view={view}
@@ -103,39 +105,39 @@ export default function App() {
       )}
 
       <button
-        onClick={() => showToast("Nhân viên tư vấn sẽ liên hệ với bạn trong ít phút nhé! 💁‍♀️")}
+        onClick={() => showToast("Nhân viên tư vấn sẽ liên hệ với bạn trong ít phút.")}
         onMouseEnter={() => setChatHovered(true)}
         onMouseLeave={() => setChatHovered(false)}
         style={{
           position: "fixed",
           bottom: 24,
           right: 24,
-          background: "linear-gradient(135deg, #A88147 0%, #8F6C3B 100%)",
-          color: "#fff",
-          border: "none",
-          borderRadius: 999,
+          background: T.dark,
+          color: T.gold,
+          border: `1px solid ${T.dark}`,
+          borderRadius: 0,
           padding: chatHovered ? "12px 22px" : "0px",
-          width: chatHovered ? "220px" : "48px",
+          width: chatHovered ? "240px" : "48px",
           height: "48px",
-          fontSize: 14,
-          fontWeight: 700,
-          boxShadow: "0 6px 18px rgba(143,108,59,0.35)",
+          fontSize: 10,
+          fontWeight: 300,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: chatHovered ? 8 : 0,
+          gap: chatHovered ? 10 : 0,
           zIndex: 99,
-          fontFamily: "inherit",
-          letterSpacing: "0.2px",
+          fontFamily: "'Josefin Sans',sans-serif",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           overflow: "hidden",
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ fontSize: 20, lineHeight: 1, display: "flex", alignItems: "center" }}>💬</span> 
+        <span style={{ fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}>—</span>
         {chatHovered && (
-          <span style={{ lineHeight: 1, paddingTop: 2 }}>Liên hệ với nhân viên</span>
+          <span style={{ lineHeight: 1 }}>Liên hệ nhân viên</span>
         )}
       </button>
       <Toast message={toast?.msg} isSuccess={toast?.ok} />

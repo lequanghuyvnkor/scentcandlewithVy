@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T } from "../data/theme";
+import { T, TYPE } from "../data/theme";
 import { RECIPES, JAR_TYPES, WAX, LINES } from "../data/recipes";
 import { Card, Btn } from "./ui/Primitives";
 import { JarCandle } from "./JarCandle";
@@ -9,13 +9,13 @@ import { fmtVND } from "../utils/formatters";
 export function ShopTab({ db, setDb, identity, showToast }) {
   const [cart, setCart] = useState({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [lineFilter, setLineFilter] = useState("Tất cả");
+  const [lineFilter, setLineFilter] = useState("ALL");
 
   const cartItems = Object.entries(cart).filter(([, q]) => q > 0);
   const cartTotal = cartItems.reduce((s, [pid, qty]) => s + (db.products.find((p) => p.id === pid)?.price ?? 0) * qty, 0);
   const addQty = (pid, delta) => setCart((c) => ({ ...c, [pid]: Math.max(0, (c[pid] ?? 0) + delta) }));
 
-  const shownProducts = db.products.filter((p) => p.active && (lineFilter === "Tất cả" || RECIPES[p.id]?.line === lineFilter));
+  const shownProducts = db.products.filter((p) => p.active && (lineFilter === "ALL" || RECIPES[p.id]?.line === lineFilter));
 
   const placeOrder = (who) => {
     let customer = db.customers.find((c) => c.phone === who.phone && who.phone);
@@ -37,16 +37,19 @@ export function ShopTab({ db, setDb, identity, showToast }) {
     setDb((d) => ({ ...d, customers, orders: [...d.orders, order], nextOrderNum: d.nextOrderNum + 1, nextCustNum }));
     setCart({});
     setCheckoutOpen(false);
-    showToast(`Cảm ơn ${who.name}! Đơn ${order.id} đã được ghi nhận 💌`);
+    showToast(`${who.name} — Order ${order.id} confirmed.`);
   };
 
   return (
     <div>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Cửa hàng nến thơm 🛍️</div>
-      <div style={{ fontSize: 12, color: T.muted, marginBottom: 14 }}>8 công thức, 4 dòng sản phẩm — chọn cây nến bạn thích nhé 🌸</div>
+      <div style={{ ...TYPE.eyebrow, color: T.muted, marginBottom: 8 }}>SOLACE COLLECTION</div>
+      <div style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 8 }}>Cửa hàng nến thơm</div>
+      <div style={{ fontSize: 12, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, marginBottom: 24 }}>
+        Eight compositions across four collections
+      </div>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        {["Tất cả", ...LINES.map((l) => l.id)].map((id) => {
+      <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 32, borderBottom: `1px solid ${T.lineHair}` }}>
+        {["ALL", ...LINES.map((l) => l.id)].map((id) => {
           const line = LINES.find((l) => l.id === id);
           const active = lineFilter === id;
           return (
@@ -54,47 +57,54 @@ export function ShopTab({ db, setDb, identity, showToast }) {
               key={id}
               onClick={() => setLineFilter(id)}
               style={{
-                padding: "7px 14px",
-                borderRadius: 999,
+                background: "none",
+                border: "none",
                 cursor: "pointer",
-                fontSize: 12,
-                fontWeight: active ? 700 : 500,
-                fontFamily: "inherit",
-                border: `2px solid ${active ? T.pink : T.line}`,
-                background: active ? T.pinkSoft : "#fff",
-                color: active ? T.pinkDeep : T.muted,
+                fontFamily: "'Josefin Sans',sans-serif",
+                fontSize: 10,
+                fontWeight: 300,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: active ? T.text : T.muted,
+                paddingBottom: 10,
+                borderBottom: active ? `1px solid ${T.text}` : "1px solid transparent",
               }}
             >
-              {line ? `${line.emoji} ${line.name}` : "🌼 Tất cả"}
+              {line ? line.name.toUpperCase() : "ALL"}
             </button>
           );
         })}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 90 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 100 }}>
         {shownProducts.map((p) => {
           const r = RECIPES[p.id];
+          const lineName = LINES.find((l) => l.id === r.line)?.name ?? "";
           const qty = cart[p.id] ?? 0;
           return (
             <Card key={p.id}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-                <JarCandle jarTypeId={r.jarType} rgb={WAX[r.wax].base} lit={false} size={78} />
+              <div style={{ ...TYPE.eyebrow, color: T.muted, marginBottom: 20 }}>COLLECTION {lineName.toUpperCase()}</div>
+              <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 24px" }}>
+                <JarCandle jarTypeId={r.jarType} rgb={WAX[r.wax].base} lit={false} size={88} />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>
-                {r.emoji} {r.name}
+              <div style={{ fontSize: 16, fontFamily: "'Cinzel',serif", fontWeight: 400, color: T.text, marginBottom: 8 }}>{r.name}</div>
+              <div style={{ fontSize: 11, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, color: T.muted, letterSpacing: "0.06em", marginBottom: 20 }}>
+                {JAR_TYPES.find((j) => j.id === r.jarType)?.name} · {r.frags.map(([n]) => n).join(" · ")}
               </div>
-              <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 8 }}>
-                {JAR_TYPES.find((j) => j.id === r.jarType)?.name} · {r.frags.map(([n]) => n).join(" + ")}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: T.pinkDeep, marginBottom: 10 }}>{fmtVND(p.price)}</div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                <Btn small onClick={() => addQty(p.id, -1)} style={{ padding: "5px 13px" }}>
-                  −
-                </Btn>
-                <span style={{ fontSize: 14, fontWeight: 700, minWidth: 22, textAlign: "center" }}>{qty}</span>
-                <Btn small primary onClick={() => addQty(p.id, 1)} style={{ padding: "5px 13px" }}>
-                  +
-                </Btn>
+              <div style={{ height: 1, background: T.lineHair, marginBottom: 20 }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ ...TYPE.price, fontSize: 18, color: T.text }}>{fmtVND(p.price)}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {qty > 0 && (
+                    <Btn small onClick={() => addQty(p.id, -1)} style={{ padding: "6px 12px" }}>
+                      −
+                    </Btn>
+                  )}
+                  {qty > 0 && <span style={{ fontSize: 13, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 400, minWidth: 16, textAlign: "center" }}>{qty}</span>}
+                  <Btn small variant={qty === 0 ? "primary" : "ghost"} onClick={() => addQty(p.id, 1)} style={{ padding: "6px 14px" }}>
+                    {qty === 0 ? "ADD" : "+"}
+                  </Btn>
+                </div>
               </div>
             </Card>
           );
@@ -105,38 +115,39 @@ export function ShopTab({ db, setDb, identity, showToast }) {
         <div
           style={{
             position: "fixed",
-            bottom: 18,
+            bottom: 24,
             left: "50%",
             transform: "translateX(-50%)",
-            background: T.pink,
-            borderRadius: 999,
-            padding: "12px 20px",
+            background: T.dark,
+            border: `1px solid ${T.gold}`,
+            borderRadius: 0,
+            padding: "14px 28px",
             display: "flex",
             alignItems: "center",
-            gap: 14,
-            boxShadow: "0 6px 24px rgba(143,108,59,0.4)",
+            gap: 24,
             zIndex: 40,
             maxWidth: "90%",
           }}
         >
-          <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>
-            🛒 {cartItems.reduce((s, [, q]) => s + q, 0)} cây · {fmtVND(cartTotal)}
+          <span style={{ color: T.card, fontFamily: "'Josefin Sans',sans-serif", fontSize: 11, fontWeight: 300, letterSpacing: "0.1em" }}>
+            {cartItems.reduce((s, [, q]) => s + q, 0)} PIECES · {fmtVND(cartTotal)}
           </span>
           <button
             onClick={() => setCheckoutOpen(true)}
             style={{
-              padding: "7px 16px",
-              borderRadius: 999,
+              padding: "0",
               border: "none",
+              background: "none",
               cursor: "pointer",
-              background: "#fff",
-              color: T.pinkDeep,
-              fontWeight: 700,
-              fontSize: 12.5,
-              fontFamily: "inherit",
+              color: T.gold,
+              fontFamily: "'Josefin Sans',sans-serif",
+              fontWeight: 300,
+              fontSize: 11,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
             }}
           >
-            Đặt hàng →
+            Checkout →
           </button>
         </div>
       )}
@@ -147,7 +158,7 @@ export function ShopTab({ db, setDb, identity, showToast }) {
           summaryLines={cartItems.map(([pid, qty]) => {
             const r = RECIPES[pid],
               p = db.products.find((x) => x.id === pid);
-            return { label: `${r.emoji} ${r.name} ×${qty}`, amount: p.price * qty };
+            return { label: `${r.name} ×${qty}`, amount: p.price * qty };
           })}
           total={cartTotal}
           onClose={() => setCheckoutOpen(false)}
