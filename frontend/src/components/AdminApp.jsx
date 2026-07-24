@@ -56,6 +56,221 @@ const TX_TYPE_LABELS = {
   reversal: "Hoàn tác trạng thái",
 };
 
+/* ═══════════════════ DATA EXPORT TAB ═══════════════════ */
+function DataExportTab({ db }) {
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo]     = useState("");
+  const [stFilter, setStFilter] = useState("all");
+
+  const filterInput = {
+    padding: "8px 0", border: "none", borderBottom: `1px solid ${T.line}`,
+    fontFamily: "'Josefin Sans',sans-serif", fontSize: 12, fontWeight: 300,
+    color: T.text, background: "transparent", outline: "none", minWidth: 120,
+  };
+  const thSt = {
+    textAlign: "left", padding: "10px 12px", fontSize: 9, fontFamily: "'Josefin Sans',sans-serif",
+    fontWeight: 300, letterSpacing: "0.2em", textTransform: "uppercase",
+    color: T.muted, borderBottom: `1px solid ${T.lineDark}`, whiteSpace: "nowrap",
+  };
+  const tdSt = {
+    padding: "12px 12px", borderBottom: `1px solid ${T.lineHair}`,
+    fontSize: 12, fontFamily: "'Josefin Sans',sans-serif", fontWeight: 300, verticalAlign: "middle",
+  };
+
+  const filtered = (db.orders || []).filter((o) => {
+    if (dateFrom && o.created < dateFrom) return false;
+    if (dateTo   && o.created > dateTo)   return false;
+    if (stFilter !== "all" && o.status !== stFilter) return false;
+    return true;
+  });
+  const filteredTotal = filtered.reduce((s, o) => s + orderTotal(o, db.products), 0);
+
+  const dlCSV = (headers, rows, name) => {
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportOrders = () => {
+    const rows = filtered.map((o) => {
+      const c    = (db.customers || []).find((x) => x.id === o.customerId);
+      const prod = o.items.map((it) => { const d = itemDisplay(it); return `${d.name} x${it.qty}`; }).join("; ");
+      const st   = STATUSES.find((s) => s.id === o.status)?.label ?? o.status;
+      return [o.id, o.created, c?.name ?? "—", c?.phone ?? "—", prod, orderTotal(o, db.products), st];
+    });
+    dlCSV(["Mã đơn","Ngày","Khách hàng","SĐT","Sản phẩm","Tổng tiền (đ)","Trạng thái"], rows, "don-hang");
+  };
+
+  const exportMaterials = () => {
+    const rows = (db.materials || []).map((m) => [
+      m.id, m.name, m.qty, m.unit, m.min, m.qty <= m.min ? "Sắp hết" : "Đủ", m.price,
+    ]);
+    dlCSV(["Mã","Nguyên liệu","Tồn kho","Đvt","Mức tối thiểu","Tình trạng","Giá nhập/đvt (đ)"], rows, "kho-nvl");
+  };
+
+  const exportProducts = () => {
+    const rows = (db.products || []).map((p) => {
+      const r    = RECIPES[p.id];
+      const sold = (db.orders || [])
+        .filter((o) => o.status === "done")
+        .reduce((s, o) => s + o.items.filter((it) => it.type === "catalog" && it.productId === p.id).reduce((a, it) => a + it.qty, 0), 0);
+      const margin = p.price > 0 ? Math.round(((p.price - p.cost) / p.price) * 100) : 0;
+      return [r?.name ?? p.id, p.price, p.cost, margin, sold, sold * p.price, sold * (p.price - p.cost)];
+    });
+    dlCSV(["Sản phẩm","Giá bán (đ)","Giá vốn (đ)","Biên lãi (%)","Đã bán","Doanh thu (đ)","Lợi nhuận (đ)"], rows, "san-pham");
+  };
+
+  const SectionHead = ({ eyebrow, title, count, onExport }) => (
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20, flexWrap:"wrap", gap:12 }}>
+      <div>
+        <div style={{ ...TYPE.eyebrow, color:T.muted, marginBottom:6 }}>{eyebrow}</div>
+        <div style={{ fontSize:17, fontFamily:"'Josefin Sans',sans-serif", fontWeight:600 }}>
+          {title}{count != null && <span style={{ fontSize:11, fontWeight:300, color:T.muted, marginLeft:8 }}>({count})</span>}
+        </div>
+      </div>
+      <Btn variant="primary" small onClick={onExport}>Xuất CSV</Btn>
+    </div>
+  );
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
+
+      {/* ── ĐƠN HÀNG ── */}
+      <Card>
+        <SectionHead eyebrow="ORDERS" title="Đơn Hàng" count={`${filtered.length}/${(db.orders||[]).length}`} onExport={exportOrders}/>
+
+        <div style={{ display:"flex", gap:24, flexWrap:"wrap", alignItems:"flex-end", marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${T.line}` }}>
+          {[
+            { label:"Từ ngày", val:dateFrom, set:setDateFrom, type:"date" },
+            { label:"Đến ngày", val:dateTo,   set:setDateTo,   type:"date" },
+          ].map(({ label, val, set, type }) => (
+            <div key={label}>
+              <div style={{ fontSize:9, fontFamily:"'Josefin Sans',sans-serif", letterSpacing:"0.2em", textTransform:"uppercase", color:T.muted, marginBottom:8 }}>{label}</div>
+              <input type={type} value={val} onChange={(e) => set(e.target.value)} style={filterInput}/>
+            </div>
+          ))}
+          <div>
+            <div style={{ fontSize:9, fontFamily:"'Josefin Sans',sans-serif", letterSpacing:"0.2em", textTransform:"uppercase", color:T.muted, marginBottom:8 }}>Trạng thái</div>
+            <select value={stFilter} onChange={(e) => setStFilter(e.target.value)} style={{ ...filterInput, cursor:"pointer" }}>
+              <option value="all">Tất cả</option>
+              {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          {(dateFrom || dateTo || stFilter !== "all") && (
+            <button onClick={() => { setDateFrom(""); setDateTo(""); setStFilter("all"); }} style={{ background:"transparent", border:"none", cursor:"pointer", fontSize:9, letterSpacing:"0.18em", textTransform:"uppercase", color:T.muted, fontFamily:"'Josefin Sans',sans-serif", padding:"0 0 8px" }}>
+              Xóa lọc ×
+            </button>
+          )}
+        </div>
+
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr>{["Mã đơn","Ngày","Khách hàng","Sản phẩm","Tổng tiền","Trạng thái"].map((h) => <th key={h} style={thSt}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} style={{ ...tdSt, textAlign:"center", color:T.muted, padding:"40px" }}>Không có đơn hàng nào phù hợp bộ lọc</td></tr>
+              )}
+              {filtered.map((o) => {
+                const cust = (db.customers||[]).find((c) => c.id === o.customerId);
+                const st   = STATUSES.find((s) => s.id === o.status);
+                return (
+                  <tr key={o.id}>
+                    <td style={{ ...tdSt, fontWeight:600, color:T.goldDeep }}>{o.id}</td>
+                    <td style={tdSt}>{o.created}</td>
+                    <td style={tdSt}>
+                      <div>{cust?.name ?? "—"}</div>
+                      {cust?.phone && <div style={{ fontSize:10, color:T.muted, marginTop:2 }}>{cust.phone}</div>}
+                    </td>
+                    <td style={tdSt}>
+                      {o.items.map((it, i) => { const d=itemDisplay(it); return <div key={i} style={{ fontSize:11, lineHeight:1.9 }}>{d.name} ×{it.qty}</div>; })}
+                    </td>
+                    <td style={tdSt}>{fmtVND(orderTotal(o, db.products))}</td>
+                    <td style={tdSt}>
+                      {st && <Badge variant={o.status==="done"?"success":o.status==="new"?"default":"gold"}>{st.label}</Badge>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {filtered.length > 0 && (
+          <div style={{ display:"flex", justifyContent:"flex-end", marginTop:16, paddingTop:16, borderTop:`1px solid ${T.line}`, fontSize:13, fontFamily:"'Josefin Sans',sans-serif", fontWeight:600, color:T.goldDeep }}>
+            Tổng: {fmtVND(filteredTotal)}
+          </div>
+        )}
+      </Card>
+
+      {/* ── KHO NVL ── */}
+      <Card>
+        <SectionHead eyebrow="INVENTORY" title="Kho Nguyên Liệu" count={(db.materials||[]).length + " mặt hàng"} onExport={exportMaterials}/>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr>{["Nguyên liệu","Tồn kho","Đvt","Mức cảnh báo","Tình trạng","Giá nhập/đvt"].map((h) => <th key={h} style={thSt}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {(db.materials||[]).map((m) => {
+                const low = m.qty <= m.min;
+                return (
+                  <tr key={m.id}>
+                    <td style={tdSt}>{m.emoji} {m.name}</td>
+                    <td style={{ ...tdSt, fontWeight:400, color:low?T.redDeep:T.text }}>{m.qty.toLocaleString("vi-VN")}</td>
+                    <td style={{ ...tdSt, color:T.muted }}>{m.unit}</td>
+                    <td style={{ ...tdSt, color:T.muted }}>{m.min}</td>
+                    <td style={tdSt}><Badge variant={low?"danger":"success"}>{low?"Sắp hết":"Đủ"}</Badge></td>
+                    <td style={{ ...tdSt, color:T.muted }}>{(m.price||0).toLocaleString("vi-VN")}đ</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* ── SẢN PHẨM ── */}
+      <Card>
+        <SectionHead eyebrow="PRODUCTS" title="Hiệu Suất Sản Phẩm" onExport={exportProducts}/>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr>{["Sản phẩm","Giá bán","Giá vốn","Biên lãi","Đã bán","Doanh thu","Lợi nhuận"].map((h) => <th key={h} style={thSt}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {(db.products||[]).map((p) => {
+                const r    = RECIPES[p.id];
+                const sold = (db.orders||[]).filter((o) => o.status==="done")
+                  .reduce((s,o) => s + o.items.filter((it) => it.type==="catalog" && it.productId===p.id).reduce((a,it) => a+it.qty, 0), 0);
+                const margin = p.price > 0 ? Math.round(((p.price - p.cost) / p.price) * 100) : 0;
+                return (
+                  <tr key={p.id}>
+                    <td style={tdSt}>{r?.emoji} {r?.name ?? p.id}</td>
+                    <td style={tdSt}>{fmtVND(p.price)}</td>
+                    <td style={{ ...tdSt, color:T.muted }}>{fmtVND(p.cost)}</td>
+                    <td style={tdSt}><Badge variant={margin>=40?"success":"gold"}>{margin}%</Badge></td>
+                    <td style={{ ...tdSt, fontWeight:400 }}>{sold}</td>
+                    <td style={{ ...tdSt, fontWeight:400 }}>{fmtVND(sold * p.price)}</td>
+                    <td style={{ ...tdSt, color:T.greenDeep, fontWeight:400 }}>{fmtVND(sold * (p.price - p.cost))}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+    </div>
+  );
+}
+
 export function AdminApp({ db, setDb, showToast }) {
   const [tab, setTab] = useState("dashboard");
   const [modal, setModal] = useState(null);
@@ -250,6 +465,7 @@ export function AdminApp({ db, setDb, showToast }) {
     { id: "logistics", emoji: "🚚", label: "Logistics" },
     { id: "customers", emoji: "👤", label: "Khách" },
     { id: "reports", emoji: "📊", label: "Báo cáo" },
+    { id: "data",    emoji: "📤", label: "Xuất" },
   ];
 
   const ttStyle = { background: T.card, border: `1px solid ${T.line}`, borderRadius: 0, fontSize: 11, color: T.text };
@@ -1569,6 +1785,8 @@ export function AdminApp({ db, setDb, showToast }) {
           }}
         />
       )}
+      {tab === "data" && <DataExportTab db={db} />}
+
       {modal?.type === "writeOff" && (() => {
         const batch = (db.batches || []).find((b) => b.id === modal.data.batchId);
         const material = db.materials.find((m) => m.id === modal.data.materialId);
