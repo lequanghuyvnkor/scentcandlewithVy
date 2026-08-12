@@ -5,7 +5,7 @@ import { Flame, Power, Layers, RotateCw, ArrowRight, Eye } from 'lucide-react';
 import * as THREE from 'three';
 
 /* =========================================================================
-   1. PROCEDURAL TEXTURES (VALERON GRAPHICS - EXACT ACCORDING TO IMAGES)
+   1. PROCEDURAL TEXTURES (VALERON GRAPHICS - ACCURATE FRONT & BACK)
    ========================================================================= */
 
 function drawValeronLogo(ctx, x, y, size, color = '#ffffff') {
@@ -200,7 +200,7 @@ function createBoxBackTexture() {
   return texture;
 }
 
-// Top Box Texture (Logo [W] centered on dark matte black as seen in Image 2)
+// Top Box Texture (Logo [W] centered on dark matte black)
 function createBoxTopTexture() {
   const width = 512;
   const height = 512;
@@ -468,7 +468,7 @@ function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2], s
   );
 }
 
-// 3D Packaging Box with Cutaway (Image 2) and Solid Back (Image 1)
+// 3D Packaging Box (Supports Solid View Image 1 & Open Display Shadowbox Cutaway View Image 2)
 function CandleBox({ position = [-1.6, 0, -0.5], isCutaway = false }) {
   const boxFrontTexture = useMemo(() => createBoxFrontTexture(), []);
   const boxBackTexture = useMemo(() => createBoxBackTexture(), []);
@@ -481,20 +481,16 @@ function CandleBox({ position = [-1.6, 0, -0.5], isCutaway = false }) {
     const frontMat = new THREE.MeshStandardMaterial({ map: boxFrontTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
     const backMat = new THREE.MeshStandardMaterial({ map: boxBackTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
 
-    // BoxGeometry Face Array Mapping:
-    // Index 0: +X (Right) -> sideMat
-    // Index 1: -X (Left)  -> sideMat
-    // Index 2: +Y (Top)   -> topMat
-    // Index 3: -Y (Bottom)-> sideMat
-    // Index 4: +Z (Front) -> frontMat
-    // Index 5: -Z (Back)  -> backMat
     return [sideMat, sideMat, topMat, sideMat, frontMat, backMat];
   }, [boxFrontTexture, boxBackTexture, boxTopTexture, boxNormalMap]);
+
+  const frameMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#111214', roughness: 0.7 }), []);
+  const foamMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#17191c', roughness: 0.9, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.4, 0.4) }), [boxNormalMap]);
 
   return (
     <group position={position} rotation={[0, 0.2, 0]}>
       {!isCutaway ? (
-        // Standard Packaging Box
+        // Standard Solid Packaging Box (Image 1)
         <group>
           <mesh position={[0, 1.925, 0]} material={boxMaterials} castShadow receiveShadow>
             <boxGeometry args={[2.25, 3.85, 2.25]} />
@@ -506,32 +502,56 @@ function CandleBox({ position = [-1.6, 0, -0.5], isCutaway = false }) {
           <pointLight position={[1.2, 1.9, 1.2]} color="#22d3ee" intensity={0.8} distance={3.2} decay={2} />
         </group>
       ) : (
-        // Cutaway Cross-Section Box View (Exact matching User Image 2!)
+        // Cutaway Open Shadowbox Display View (Exact matching User Image 2!)
         <group position={[0, 0, 0]}>
-          {/* Black Outer Shell */}
-          <mesh position={[0, 1.925, -0.05]} castShadow receiveShadow>
-            <boxGeometry args={[2.28, 3.87, 2.15]} />
-            <meshStandardMaterial color="#0f1113" roughness={0.8} />
+          {/* Back Wall */}
+          <mesh position={[0, 1.925, -1.025]} material={frameMat} castShadow receiveShadow>
+            <boxGeometry args={[2.25, 3.85, 0.2]} />
           </mesh>
 
-          {/* Black Foam Mold Cushion Inside */}
-          <mesh position={[0, 1.9, 0]} receiveShadow>
-            <boxGeometry args={[2.15, 3.75, 2.0]} />
-            <meshStandardMaterial color="#17191c" roughness={0.9} normalMap={boxNormalMap} normalScale={new THREE.Vector2(0.4, 0.4)} />
+          {/* Left Wall */}
+          <mesh position={[-1.025, 1.925, 0]} material={frameMat} castShadow receiveShadow>
+            <boxGeometry args={[0.2, 3.85, 2.25]} />
           </mesh>
 
-          {/* Cyan Glow Lines (Acrylic Framed Edges) */}
-          <mesh position={[1.13, 1.925, 1.01]}>
-            <boxGeometry args={[0.02, 3.85, 0.02]} />
+          {/* Right Wall */}
+          <mesh position={[1.025, 1.925, 0]} material={frameMat} castShadow receiveShadow>
+            <boxGeometry args={[0.2, 3.85, 2.25]} />
+          </mesh>
+
+          {/* Top Wall */}
+          <mesh position={[0, 3.75, 0]} material={frameMat} castShadow receiveShadow>
+            <boxGeometry args={[2.25, 0.2, 2.25]} />
+          </mesh>
+
+          {/* Bottom Wall */}
+          <mesh position={[0, 0.1, 0]} material={frameMat} castShadow receiveShadow>
+            <boxGeometry args={[2.25, 0.2, 2.25]} />
+          </mesh>
+
+          {/* Interior Molded Foam Insert Cushion */}
+          <mesh position={[0, 1.925, -0.75]} material={foamMat} receiveShadow>
+            <boxGeometry args={[1.85, 3.45, 0.35]} />
+          </mesh>
+          <mesh position={[0, 0.35, 0]} material={foamMat} receiveShadow>
+            <boxGeometry args={[1.85, 0.3, 1.85]} />
+          </mesh>
+          <mesh position={[0, 3.5, 0]} material={foamMat} receiveShadow>
+            <boxGeometry args={[1.85, 0.3, 1.85]} />
+          </mesh>
+
+          {/* Cyan Glow Edges (Acrylic Outline Frame) */}
+          <mesh position={[1.12, 1.925, 1.125]}>
+            <boxGeometry args={[0.02, 3.83, 0.02]} />
             <meshBasicMaterial color="#22d3ee" />
           </mesh>
-          <mesh position={[-1.13, 1.925, 1.01]}>
-            <boxGeometry args={[0.02, 3.85, 0.02]} />
+          <mesh position={[-1.12, 1.925, 1.125]}>
+            <boxGeometry args={[0.02, 3.83, 0.02]} />
             <meshBasicMaterial color="#22d3ee" />
           </mesh>
 
-          {/* JAR INSIDE PACKAGING - EXACT 1:1 SCALING & DIMENSIONS AS OUTSIDE JAR */}
-          <CandleJar position={[0, 0, 0]} isLit={false} isLidOn={true} scale={1.0} />
+          {/* CANDLE JAR INSIDE PACKAGING - EXACT 1:1 SCALING & GEOMETRY AS OUTSIDE JAR */}
+          <CandleJar position={[0, 0.2, 0]} isLit={false} isLidOn={true} scale={1.0} />
         </group>
       )}
     </group>
