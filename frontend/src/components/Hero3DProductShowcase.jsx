@@ -97,33 +97,27 @@ function createBoxFrontTexture() {
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = '600 68px "Cinzel", serif';
-  ctx.letterSpacing = '14px';
   ctx.fillText('VALERON', width / 2, 540);
 
   ctx.fillStyle = '#22d3ee';
   ctx.font = '600 32px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '10px';
   ctx.fillText('GATE I', width / 2, 630);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '500 60px "Cinzel", serif';
-  ctx.letterSpacing = '12px';
   ctx.fillText('MORNING', width / 2, 1080);
   ctx.fillText('POWER', width / 2, 1170);
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '400 24px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '6px';
   ctx.fillText('THE FIRST HOUR PROTOCOL', width / 2, 1280);
 
   ctx.fillStyle = '#cbd5e1';
   ctx.font = '500 26px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '4px';
   ctx.fillText('BERGAMOT · BLACK PEPPER · DRY CEDAR', width / 2, 1370);
 
   ctx.fillStyle = '#64748b';
   ctx.font = '400 24px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '8px';
   ctx.fillText('200 G', width / 2, 1620);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -149,17 +143,14 @@ function createBoxBackTexture() {
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = '600 58px "Cinzel", serif';
-  ctx.letterSpacing = '12px';
   ctx.fillText('VALERON', width / 2, 440);
 
   ctx.fillStyle = '#22d3ee';
   ctx.font = '600 28px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '8px';
   ctx.fillText('GATE I', width / 2, 510);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '500 52px "Cinzel", serif';
-  ctx.letterSpacing = '10px';
   ctx.fillText('MORNING POWER', width / 2, 640);
 
   const drawSection = (title, line1, line2, yPos) => {
@@ -172,12 +163,10 @@ function createBoxBackTexture() {
 
     ctx.fillStyle = '#22d3ee';
     ctx.font = '600 24px "Josefin Sans", sans-serif';
-    ctx.letterSpacing = '6px';
     ctx.fillText(title, width / 2, yPos + 55);
 
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '400 24px "Josefin Sans", sans-serif';
-    ctx.letterSpacing = '4px';
     ctx.fillText(line1, width / 2, yPos + 105);
 
     if (line2) {
@@ -190,7 +179,6 @@ function createBoxBackTexture() {
   drawSection('MATERIALS', 'SOY–COCONUT WAX', 'PREMIUM FRAGRANCE BLEND', 1220);
   ctx.fillStyle = '#e2e8f0';
   ctx.font = '400 24px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '4px';
   ctx.fillText('COTTON WICK', width / 2, 1220 + 185);
 
   drawSection('RITUAL', 'TRIM WICK TO 5 MM', 'BURN FOR 2–3 HOURS', 1520);
@@ -204,11 +192,30 @@ function createBoxBackTexture() {
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '500 24px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '8px';
   ctx.fillText('200 G', width / 2, 1870);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 16;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+// Top Box Texture (Logo [W] centered on dark matte black as seen in Image 2)
+function createBoxTopTexture() {
+  const width = 512;
+  const height = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0f1113';
+  ctx.fillRect(0, 0, width, height);
+
+  drawValeronLogo(ctx, width / 2, height / 2, 140, '#ffffff');
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 8;
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
@@ -233,23 +240,19 @@ function createJarLabelTexture() {
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = '600 48px "Cinzel", serif';
-  ctx.letterSpacing = '10px';
   ctx.fillText('VALERON', width / 2, 400);
 
   ctx.fillStyle = '#22d3ee';
   ctx.font = '600 24px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '8px';
   ctx.fillText('GATE I', width / 2, 470);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '400 22px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '4px';
   ctx.fillText('SOY–COCONUT WAX', width / 2, 650);
   ctx.fillText('COTTON WICK', width / 2, 700);
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '400 20px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '6px';
   ctx.fillText('200 G', width / 2, 790);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -469,14 +472,24 @@ function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2], s
 function CandleBox({ position = [-1.6, 0, -0.5], isCutaway = false }) {
   const boxFrontTexture = useMemo(() => createBoxFrontTexture(), []);
   const boxBackTexture = useMemo(() => createBoxBackTexture(), []);
+  const boxTopTexture = useMemo(() => createBoxTopTexture(), []);
   const boxNormalMap = useMemo(() => createMicroNormalMap(512, 512, 0.6), []);
 
   const boxMaterials = useMemo(() => {
     const sideMat = new THREE.MeshStandardMaterial({ color: '#111214', roughness: 0.75, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.2, 0.2) });
+    const topMat = new THREE.MeshStandardMaterial({ map: boxTopTexture, roughness: 0.6, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
     const frontMat = new THREE.MeshStandardMaterial({ map: boxFrontTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
     const backMat = new THREE.MeshStandardMaterial({ map: boxBackTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
-    return [sideMat, sideMat, sideMat, backMat, frontMat, sideMat];
-  }, [boxFrontTexture, boxBackTexture, boxNormalMap]);
+
+    // BoxGeometry Face Array Mapping:
+    // Index 0: +X (Right) -> sideMat
+    // Index 1: -X (Left)  -> sideMat
+    // Index 2: +Y (Top)   -> topMat
+    // Index 3: -Y (Bottom)-> sideMat
+    // Index 4: +Z (Front) -> frontMat
+    // Index 5: -Z (Back)  -> backMat
+    return [sideMat, sideMat, topMat, sideMat, frontMat, backMat];
+  }, [boxFrontTexture, boxBackTexture, boxTopTexture, boxNormalMap]);
 
   return (
     <group position={position} rotation={[0, 0.2, 0]}>
