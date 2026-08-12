@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Lightformer, Sparkles } from '@react-three/drei';
-import { Flame, Power, Layers, RotateCw, ArrowRight } from 'lucide-react';
+import { Flame, Power, Layers, RotateCw, ArrowRight, Eye } from 'lucide-react';
 import * as THREE from 'three';
 
 /* =========================================================================
-   1. PROCEDURAL TEXTURES (VALERON GRAPHICS)
+   1. PROCEDURAL TEXTURES (VALERON GRAPHICS - EXACT ACCORDING TO IMAGES)
    ========================================================================= */
 
 function drawValeronLogo(ctx, x, y, size, color = '#ffffff') {
@@ -70,7 +70,8 @@ function createMicroNormalMap(width = 512, height = 512, intensity = 0.8) {
   return texture;
 }
 
-function createBoxTexture() {
+// Front Box Texture
+function createBoxFrontTexture() {
   const width = 1024;
   const height = 2048;
   const canvas = document.createElement('canvas');
@@ -79,7 +80,7 @@ function createBoxTexture() {
   const ctx = canvas.getContext('2d');
 
   const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, '#151719');
+  bgGradient.addColorStop(0, '#141618');
   bgGradient.addColorStop(0.5, '#0d0e10');
   bgGradient.addColorStop(1, '#090a0b');
   ctx.fillStyle = bgGradient;
@@ -131,6 +132,87 @@ function createBoxTexture() {
   return texture;
 }
 
+// Back Box Texture (Exact according to User Image 1)
+function createBoxBackTexture() {
+  const width = 1024;
+  const height = 2048;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0f1113';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.textAlign = 'center';
+  drawValeronLogo(ctx, width / 2, 220, 140, '#ffffff');
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '600 58px "Cinzel", serif';
+  ctx.letterSpacing = '12px';
+  ctx.fillText('VALERON', width / 2, 440);
+
+  ctx.fillStyle = '#22d3ee';
+  ctx.font = '600 28px "Josefin Sans", sans-serif';
+  ctx.letterSpacing = '8px';
+  ctx.fillText('GATE I', width / 2, 510);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '500 52px "Cinzel", serif';
+  ctx.letterSpacing = '10px';
+  ctx.fillText('MORNING POWER', width / 2, 640);
+
+  const drawSection = (title, line1, line2, yPos) => {
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(200, yPos);
+    ctx.lineTo(824, yPos);
+    ctx.stroke();
+
+    ctx.fillStyle = '#22d3ee';
+    ctx.font = '600 24px "Josefin Sans", sans-serif';
+    ctx.letterSpacing = '6px';
+    ctx.fillText(title, width / 2, yPos + 55);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '400 24px "Josefin Sans", sans-serif';
+    ctx.letterSpacing = '4px';
+    ctx.fillText(line1, width / 2, yPos + 105);
+
+    if (line2) {
+      ctx.fillText(line2, width / 2, yPos + 145);
+    }
+  };
+
+  drawSection('PURPOSE', 'CLARITY · FOCUS · INTENTION', null, 740);
+  drawSection('SCENT PROFILE', 'BERGAMOT · BLACK PEPPER · SMOKY CEDAR', null, 980);
+  drawSection('MATERIALS', 'SOY–COCONUT WAX', 'PREMIUM FRAGRANCE BLEND', 1220);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '400 24px "Josefin Sans", sans-serif';
+  ctx.letterSpacing = '4px';
+  ctx.fillText('COTTON WICK', width / 2, 1220 + 185);
+
+  drawSection('RITUAL', 'TRIM WICK TO 5 MM', 'BURN FOR 2–3 HOURS', 1520);
+
+  ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(200, 1790);
+  ctx.lineTo(824, 1790);
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '500 24px "Josefin Sans", sans-serif';
+  ctx.letterSpacing = '8px';
+  ctx.fillText('200 G', width / 2, 1870);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 16;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function createJarLabelTexture() {
   const width = 1024;
   const height = 1024;
@@ -142,8 +224,8 @@ function createJarLabelTexture() {
   ctx.fillStyle = '#0e1012';
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = '#262a30';
-  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#22d3ee';
+  ctx.lineWidth = 4;
   ctx.strokeRect(30, 30, width - 60, height - 60);
 
   ctx.textAlign = 'center';
@@ -160,14 +242,15 @@ function createJarLabelTexture() {
   ctx.fillText('GATE I', width / 2, 470);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '500 44px "Cinzel", serif';
-  ctx.letterSpacing = '8px';
-  ctx.fillText('MORNING POWER', width / 2, 650);
+  ctx.font = '400 22px "Josefin Sans", sans-serif';
+  ctx.letterSpacing = '4px';
+  ctx.fillText('SOY–COCONUT WAX', width / 2, 650);
+  ctx.fillText('COTTON WICK', width / 2, 700);
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '400 20px "Josefin Sans", sans-serif';
-  ctx.letterSpacing = '3px';
-  ctx.fillText('BERGAMOT · BLACK PEPPER · DRY CEDAR', width / 2, 780);
+  ctx.letterSpacing = '6px';
+  ctx.fillText('200 G', width / 2, 790);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 16;
@@ -291,10 +374,10 @@ function CandleFlame({ isLit = true, position = [0, 1.58, 0] }) {
 }
 
 /* =========================================================================
-   3. 3D CANDLE JAR & BOX
+   3. 3D CANDLE JAR & BOX (EXACT 1:1 SCALING MATCH FOR BOTH INSIDE & OUTSIDE)
    ========================================================================= */
 
-function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2] }) {
+function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2], scale = 1.0 }) {
   const lidRef = useRef();
   const labelTexture = useMemo(() => createJarLabelTexture(), []);
   const lidTexture = useMemo(() => createLidTexture(), []);
@@ -333,7 +416,7 @@ function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2] })
   }, []);
 
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       <mesh geometry={jarGeometry} castShadow receiveShadow>
         <meshPhysicalMaterial
           color="#111214"
@@ -382,35 +465,71 @@ function CandleJar({ isLit = false, isLidOn = true, position = [0.95, 0, 0.2] })
   );
 }
 
-function CandleBox({ position = [-1.6, 0, -0.5] }) {
-  const boxTexture = useMemo(() => createBoxTexture(), []);
+// 3D Packaging Box with Cutaway (Image 2) and Solid Back (Image 1)
+function CandleBox({ position = [-1.6, 0, -0.5], isCutaway = false }) {
+  const boxFrontTexture = useMemo(() => createBoxFrontTexture(), []);
+  const boxBackTexture = useMemo(() => createBoxBackTexture(), []);
   const boxNormalMap = useMemo(() => createMicroNormalMap(512, 512, 0.6), []);
 
   const boxMaterials = useMemo(() => {
     const sideMat = new THREE.MeshStandardMaterial({ color: '#111214', roughness: 0.75, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.2, 0.2) });
-    const frontMat = new THREE.MeshStandardMaterial({ map: boxTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
-    return [sideMat, sideMat, sideMat, sideMat, frontMat, sideMat];
-  }, [boxTexture, boxNormalMap]);
+    const frontMat = new THREE.MeshStandardMaterial({ map: boxFrontTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
+    const backMat = new THREE.MeshStandardMaterial({ map: boxBackTexture, roughness: 0.65, normalMap: boxNormalMap, normalScale: new THREE.Vector2(0.15, 0.15) });
+    return [sideMat, sideMat, sideMat, backMat, frontMat, sideMat];
+  }, [boxFrontTexture, boxBackTexture, boxNormalMap]);
 
   return (
     <group position={position} rotation={[0, 0.2, 0]}>
-      <mesh position={[0, 1.925, 0]} material={boxMaterials} castShadow receiveShadow>
-        <boxGeometry args={[2.25, 3.85, 2.25]} />
-      </mesh>
-      <mesh position={[1.128, 1.925, 1.128]}>
-        <boxGeometry args={[0.02, 3.83, 0.02]} />
-        <meshBasicMaterial color="#22d3ee" />
-      </mesh>
-      <pointLight position={[1.2, 1.9, 1.2]} color="#22d3ee" intensity={0.8} distance={3.2} decay={2} />
+      {!isCutaway ? (
+        // Standard Packaging Box
+        <group>
+          <mesh position={[0, 1.925, 0]} material={boxMaterials} castShadow receiveShadow>
+            <boxGeometry args={[2.25, 3.85, 2.25]} />
+          </mesh>
+          <mesh position={[1.128, 1.925, 1.128]}>
+            <boxGeometry args={[0.02, 3.83, 0.02]} />
+            <meshBasicMaterial color="#22d3ee" />
+          </mesh>
+          <pointLight position={[1.2, 1.9, 1.2]} color="#22d3ee" intensity={0.8} distance={3.2} decay={2} />
+        </group>
+      ) : (
+        // Cutaway Cross-Section Box View (Exact matching User Image 2!)
+        <group position={[0, 0, 0]}>
+          {/* Black Outer Shell */}
+          <mesh position={[0, 1.925, -0.05]} castShadow receiveShadow>
+            <boxGeometry args={[2.28, 3.87, 2.15]} />
+            <meshStandardMaterial color="#0f1113" roughness={0.8} />
+          </mesh>
+
+          {/* Black Foam Mold Cushion Inside */}
+          <mesh position={[0, 1.9, 0]} receiveShadow>
+            <boxGeometry args={[2.15, 3.75, 2.0]} />
+            <meshStandardMaterial color="#17191c" roughness={0.9} normalMap={boxNormalMap} normalScale={new THREE.Vector2(0.4, 0.4)} />
+          </mesh>
+
+          {/* Cyan Glow Lines (Acrylic Framed Edges) */}
+          <mesh position={[1.13, 1.925, 1.01]}>
+            <boxGeometry args={[0.02, 3.85, 0.02]} />
+            <meshBasicMaterial color="#22d3ee" />
+          </mesh>
+          <mesh position={[-1.13, 1.925, 1.01]}>
+            <boxGeometry args={[0.02, 3.85, 0.02]} />
+            <meshBasicMaterial color="#22d3ee" />
+          </mesh>
+
+          {/* JAR INSIDE PACKAGING - EXACT 1:1 SCALING & DIMENSIONS AS OUTSIDE JAR */}
+          <CandleJar position={[0, 0, 0]} isLit={false} isLidOn={true} scale={1.0} />
+        </group>
+      )}
     </group>
   );
 }
 
 /* =========================================================================
-   4. STUDIO SCENE WITH AUTO-ROTATE SUPPORT
+   4. STUDIO SCENE WITH AUTO-ROTATE SUPPORT & CUTAWAY VIEW TOGGLE
    ========================================================================= */
 
-function StudioScene({ isLit = false, isLidOn = true, autoRotate = true }) {
+function StudioScene({ isLit = false, isLidOn = true, autoRotate = true, isCutaway = false }) {
   return (
     <>
       <OrbitControls
@@ -442,8 +561,11 @@ function StudioScene({ isLit = false, isLidOn = true, autoRotate = true }) {
         <ContactShadows position={[0, 0.01, 0]} opacity={0.8} scale={12} blur={2.0} far={5.0} />
       </group>
 
-      <CandleBox position={[-1.6, 0, -0.5]} />
-      <CandleJar position={[0.95, 0, 0.2]} isLit={isLit} isLidOn={isLidOn} />
+      {/* 3D Box Packaging (Supports Cutaway mode from Image 2 + Back panel from Image 1) */}
+      <CandleBox position={[-1.6, 0, -0.5]} isCutaway={isCutaway} />
+
+      {/* Standalone Candle Jar (Exact 1:1 Scale matching the Jar inside packaging) */}
+      <CandleJar position={[0.95, 0, 0.2]} isLit={isLit} isLidOn={isLidOn} scale={1.0} />
 
       {isLit && !isLidOn && (
         <Sparkles count={35} scale={[1.2, 2.5, 1.2]} position={[0.95, 2.0, 0.2]} size={2.5} speed={0.4} color="#ffaa33" />
@@ -453,13 +575,14 @@ function StudioScene({ isLit = false, isLidOn = true, autoRotate = true }) {
 }
 
 /* =========================================================================
-   5. FULLSCREEN HERO SHOWCASE (AUTO-ROTATE BY DEFAULT + 360 BUTTON + FLAME + LID + TÌM HIỂU NGAY)
+   5. FULLSCREEN HERO SHOWCASE WITH CUTAWAY TOGGLE & ACCURATE GRAPHICS
    ========================================================================= */
 
 export default function Hero3DProductShowcase({ setView, onExploreClick }) {
   const [isLit, setIsLit] = useState(false);
   const [isLidOn, setIsLidOn] = useState(true);
-  const [autoRotate, setAutoRotate] = useState(true); // Default 360 auto rotate active!
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [isCutaway, setIsCutaway] = useState(false);
 
   const handleExplore = () => {
     if (setView) {
@@ -507,12 +630,12 @@ export default function Hero3DProductShowcase({ setView, onExploreClick }) {
           }}
         >
           <Suspense fallback={null}>
-            <StudioScene isLit={isLit} isLidOn={isLidOn} autoRotate={autoRotate} />
+            <StudioScene isLit={isLit} isLidOn={isLidOn} autoRotate={autoRotate} isCutaway={isCutaway} />
           </Suspense>
         </Canvas>
       </div>
 
-      {/* Interactive Controls Overlay - Flame, Lid, & 360 Spin Toggle Button */}
+      {/* Interactive Controls Overlay */}
       <div style={{
         position: 'absolute',
         bottom: '36px',
@@ -579,6 +702,31 @@ export default function Hero3DProductShowcase({ setView, onExploreClick }) {
         >
           <Layers size={16} />
           <span>{isLidOn ? 'Lid: ON' : 'Lid: OFF'}</span>
+        </button>
+
+        {/* Cutaway / Cross-Section View Toggle (Image 2 Cutaway View) */}
+        <button
+          onClick={() => setIsCutaway(!isCutaway)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            borderRadius: '50px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: isCutaway ? 'rgba(34, 211, 238, 0.25)' : 'rgba(15, 23, 42, 0.85)',
+            backdropFilter: 'blur(12px)',
+            color: isCutaway ? '#22d3ee' : '#94a3b8',
+            fontSize: '13px',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            transition: 'all 0.3s ease',
+            fontFamily: "'Josefin Sans', sans-serif",
+            letterSpacing: '0.08em'
+          }}
+        >
+          <Eye size={16} />
+          <span>{isCutaway ? 'Cutaway View' : 'Solid Box'}</span>
         </button>
 
         {/* 360 Spin Toggle Button (RotateCw) */}
