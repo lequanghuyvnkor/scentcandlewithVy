@@ -9,15 +9,22 @@
     "lint": "eslint src --ext .js,.jsx"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@react-three/drei": "^9.121.5",
+    "@react-three/fiber": "^8.17.14",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.475.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "recharts": "^2.10.0",
-    "axios": "^1.6.0"
+    "three": "^0.173.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
-    "vite": "^5.0.0",
     "eslint": "^8.54.0",
-    "eslint-plugin-react": "^7.33.0"
+    "eslint-plugin-react": "^7.33.0",
+    "vite": "^5.0.0"
+  },
+  "overrides": {
+    "react-reconciler": "0.29.0"
   }
 }

@@ -1,6 +1,7 @@
 import { T, TYPE } from "../data/theme";
 import { LINES, RECIPES } from "../data/recipes";
 import { Card, Btn } from "./ui/Primitives";
+import Hero3DProductShowcase from "./Hero3DProductShowcase";
 
 const STEPS = [
   { num: "I", title: "Chọn sáp & mùi", desc: "Pha trộn tối đa 4 mùi hương yêu thích" },
@@ -12,6 +13,10 @@ const STEPS = [
 export function LandingPage({ setView }) {
   return (
     <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+      {/* 1. STANDALONE 3D HERO PRODUCT SHOWCASE (VALERON GATE I) */}
+      <Hero3DProductShowcase setView={setView} />
+
+      {/* 2. BRAND INTRODUCTION BANNER */}
       <div
         style={{
           textAlign: "center",
@@ -51,6 +56,7 @@ export function LandingPage({ setView }) {
         </div>
       </div>
 
+      {/* 3. COLLECTIONS GRID */}
       <div style={{ ...TYPE.eyebrow, color: T.muted, textAlign: "center", marginBottom: 12 }}>OUR COLLECTIONS</div>
       <div style={{ ...TYPE.title, color: T.text, textAlign: "center", marginBottom: 32 }}>The Lines</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 48 }}>
@@ -72,6 +78,7 @@ export function LandingPage({ setView }) {
         })}
       </div>
 
+      {/* 4. PROCESS STEPS */}
       <div style={{ ...TYPE.eyebrow, color: T.muted, textAlign: "center", marginBottom: 12 }}>HOW IT WORKS</div>
       <div style={{ ...TYPE.title, color: T.text, textAlign: "center", marginBottom: 32 }}>The Process</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
